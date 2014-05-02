@@ -7,6 +7,8 @@ TODO
 ----
 
 - Option to append new speaker folder.
+- Save information from the speakers.
+- Compile information about the database (_ total hours, train/test percentage, last update, etc _)
 
 Authors
 -------
