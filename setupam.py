@@ -25,11 +25,11 @@ __maintainer__ = "Gabriel Araujo"
 import argparse
 from os import path, makedirs
 from glob import iglob
-from shutil import copy2
 from math import floor
 from random import shuffle
-import re
+
 import metadata
+import speaker
 
 parser = argparse.ArgumentParser(description='Structure the voxforge speech corpus in the Sphinx-Train template.')
 
@@ -37,7 +37,7 @@ parser.add_argument('model', help='The name of your model to be set up.')
 
 parser.add_argument('-s', '--source', default='.', help='The source directory for the wav files.')
 
-parser.add_argument('-t', '--target', default='.', help='The target directory for the wav files.')
+parser.add_argument('-t', '--target', default='.', help='The target directory for setting up the acoustic model training.')
 
 parser.add_argument('-q', '--quota', default=0.1, type=float, \
 	help="The percentage (float value) of speakers selected for the test database. Default=0.1", metavar='Q')
@@ -51,45 +51,13 @@ source = args.source
 target = path.join(args.target, model)
 dbtest_p = args.quota
 
-def getAllDirs(source):
+def get_all_dirs(source):
 	'''Get all wav directories.'''
 	return [path.split(x)[0] for x in sorted(iglob(path.join(source, '*/wav')))]
 
-def getWavFiles(speakerDir):
-	'''Get all wav files in a given directory.'''
-	return sorted(iglob(path.join(speakerDir, 'wav/*.wav')))
-
-def mkdirSpeaker(target, index):
-	'''Create the speaker directory.'''
-	d = path.join(target, 'speaker_{}'.format(str(index)))
-	if not path.exists(d):
-		try:
-			if args.verbose:
-				print("Creating directory '{}'...".format(d), end='')
-			makedirs(d)
-			if args.verbose:
-				print('[Done.]')
-		except Exception as err:
-			print("Error while creating directory '{}': ".format(d), err)
-	return d
-
-def copywavs(sourcefile, targetpath, wav_index):
-	'''Copy the wav files from source path to target path.'''
-	dstname = path.join(targetpath, '{:03}.wav'.format(wav_index))
-	if not path.exists(dstname):
-		try:
-			(folder, namefile) = path.split(sourcefile)
-			if args.verbose:
-				print("Copying wav file '{}'...".format(namefile), end='')
-			copy2(sourcefile, dstname)
-			if args.verbose:
-				print('[Done.]')
-			return dstname
-		except Exception as err:
-			print("Error while copying wav file '{}': ".format(namefile), err)
-
 if __name__ == '__main__':
 	metadata._verbose = args.verbose
+	speaker._verbose = args.verbose
 
 	# Creating root directories
 	etc_dir = path.join(target, 'etc')
@@ -105,36 +73,23 @@ if __name__ == '__main__':
 	test_fileid = path.join(etc_dir, '{}_test.fileids'.format(model))
 	test_trans = path.join(etc_dir, '{}_test.transcription'.format(model))
 
-
-	dirs = getAllDirs(source)
+	# Get all speaker directories to setup.
+	dirs = get_all_dirs(source)
 	nspeakers = len(dirs)
 	print("Found {} speakers' directories.".format(nspeakers))
 	
+	# Compute the percentage of the test base
 	nstest =  floor(dbtest_p * nspeakers)
 	nstrain = nspeakers - nstest
 	print('Selected {} speakers for the train database, and {} speakers for the test database.'.format(nstrain,nstest))
 
-	shuffle(dirs)
+	shuffle(dirs) #choose speakers randomly
 
-	speaker_count = 0
-	wav_count = 0
-	for directory in dirs: # Iterating over speakers' directories
-		speaker_count = speaker_count + 1
-		if speaker_count <= nstrain:
-			fileid = train_fileid
-			trans = train_trans
-		else:
-			fileid = test_fileid
-			trans = test_trans
+	# Iterating over train speakers' directories
+	for speaker_id in range(nstrain):
+		speaker.add(dirs[speaker_id], speaker_id, wav_dir, train_fileid, train_trans)
 
-		#if args.verbose:
-		print("Setting speaker number {}. (source: '{}')".format(speaker_count, directory))
-		spk_dir = mkdirSpeaker(wav_dir, speaker_count)
-		spk_prompts = metadata.get_prompts(directory)
-		for wavfile in getWavFiles(directory):
-			wav_count = wav_count + 1
-			copywavs(wavfile, spk_dir, wav_count)
-			metadata.store_fileids(fileid, speaker_count, wav_count)
-			metadata.store_trans(trans, spk_prompts[path.basename(wavfile)], wav_count)
-			
+	# Iterating over test speakers' directories
+	for speaker_id in range(nstrain, nspeakers):
+		speaker.add(dirs[speaker_id], speaker_id, wav_dir, test_fileid, test_trans)			
 			

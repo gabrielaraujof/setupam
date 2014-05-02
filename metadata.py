@@ -40,16 +40,16 @@ def _store(file_path, data):
 			print("Storing '{}' in {}.".format(data, path.split(file_path)[1]))
 		file.write(data + '\n')
 
-def store_fileids(file_path, speaker, wav):
-	_store(file_path, 'speaker_{}/{:03}'.format(speaker,wav))
+def store_fileids(file_path, speaker_ref, wav_ref):
+	_store(file_path, '{}/{}'.format(speaker_ref, wav_ref))
 
-def build_trans(prompt, wav_ref):
+def _build_trans(prompt, wav_ref):
 	prompt = prompt.lower()
 	pattern = re.compile('[,.?!]+')
 	prompt = pattern.sub('', prompt)
-	return '<s> {} </s> ({:03})'.format(prompt, wav_ref)
+	return '<s> {} </s> ({})'.format(prompt, wav_ref)
 
 def store_trans(file_path, prompt, wav_ref):
 	'''Store the transcription of a wav file'''
-	trans = build_trans(prompt, wav_ref)
+	trans = _build_trans(prompt, wav_ref)
 	_store(file_path, trans)
