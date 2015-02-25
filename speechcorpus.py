@@ -27,7 +27,8 @@ import os
 
 class Speaker:
 
-    def __init__(self, srcdir, trgdir):
+    def __init__(self, spkid, srcdir, trgdir):
+        self.id = spkid
         self.source = srcdir
         self.target = trgdir
 
@@ -54,10 +55,11 @@ class Speaker:
         '''Save the speaker data in the target folder.'''
         pass
 
-    def _copywavs(self, srcpath, trgname):
+    def _copywav(self, srcwavname, trgwavid):
         '''Copy a wav file to the target directory.'''
         try:
-            trgpath = os.path.join(self.target, '%s.wav' % trgname)
+            srcpath = os.path.join(self.source, 'wav', '%s.wav' % srcwavname)
+            trgpath = os.path.join(self.target, 'wav', '%04d' % self.id, '%04d_%03d.wav' % (self.id, trgwavid))
             if not os.path.exists(trgpath):
                 sh.copy2(srcpath, trgpath)
         except Exception as err:
