@@ -66,13 +66,3 @@ class Speaker:
     def _saveinfo(self):
         '''Save information to some target file.'''
         pass
-
-#class AudioSample:
-
-#    def __init__(self, path, name):
-#        self.path = path
-#        self.name = name
-
-sp = Speaker('../../anonymous-20081007-oly', '../../x')
-sp._gatherprompts()
-print(sp.prompts)
