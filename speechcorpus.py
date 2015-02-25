@@ -27,10 +27,9 @@ import os
 
 class Speaker:
 
-    def __init__(self, srddir, trgdir):
+    def __init__(self, srcdir, trgdir):
         self.source = srcdir
         self.target = trgdir
-        self.samples = []
 
     def load(self):
         '''Load the speaker data.'''
@@ -42,7 +41,10 @@ class Speaker:
 
     def _gatherprompts(self):
         '''Gather all the transcriptions for that speaker.'''
-        pass
+        filepath = os.path.join(self.source, 'etc', 'prompts-original')
+        with open(filepath, mode='r', encoding='utf-8') as f:
+            promptlist =  [(line.split('\n')[0]).split(maxsplit=1) for line in f.readlines()]
+        self.prompts = {prompt[0]:prompt[1] for prompt in promptlist}
 
     def _gatheraudios(self):
         '''Gather all the speech audios for that speaker.'''
@@ -58,8 +60,8 @@ class Speaker:
             trgpath = os.path.join(self.target, '%s.wav' % trgname)
             if not os.path.exists(trgpath):
                 sh.copy2(srcpath, trgpath)
-		except Exception as err:
-			print("Error while copying the file '%s'.\n" % namefile, err)
+        except Exception as err:
+            print("Error while copying the file '%s'.\n" % namefile, err)
 
     def _saveinfo(self):
         '''Save information to some target file.'''
@@ -70,3 +72,7 @@ class Speaker:
 #    def __init__(self, path, name):
 #        self.path = path
 #        self.name = name
+
+sp = Speaker('../../anonymous-20081007-oly', '../../x')
+sp._gatherprompts()
+print(sp.prompts)
