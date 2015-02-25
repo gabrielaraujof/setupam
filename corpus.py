@@ -31,6 +31,11 @@ class Speaker:
         self.id = spkid
         self.source = srcdir
         self.target = trgdir
+        self.prompts = self.audios = None
+        try:
+            self._gatherprompts()
+        except IOError as e:
+            print('I/O error(%s): %s %s' % (e.errno, e.strerror, e.filename))
 
     def load(self):
         '''Load the speaker data.'''
@@ -57,13 +62,10 @@ class Speaker:
 
     def _copywav(self, srcwavname, trgwavid):
         '''Copy a wav file to the target directory.'''
-        try:
-            srcpath = os.path.join(self.source, 'wav', '%s.wav' % srcwavname)
-            trgpath = os.path.join(self.target, 'wav', '%04d' % self.id, '%04d_%03d.wav' % (self.id, trgwavid))
-            if not os.path.exists(trgpath):
-                sh.copy2(srcpath, trgpath)
-        except Exception as err:
-            print("Error while copying the file '%s'.\n" % namefile, err)
+        srcpath = os.path.join(self.source, 'wav', '%s.wav' % srcwavname)
+        trgpath = os.path.join(self.target, 'wav', '%04d' % self.id, '%04d_%03d.wav' % (self.id, trgwavid))
+        if not os.path.exists(trgpath):
+            sh.copy2(srcpath, trgpath)
 
     def _saveinfo(self):
         '''Save information to some target file.'''
