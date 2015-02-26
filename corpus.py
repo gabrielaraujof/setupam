@@ -24,6 +24,16 @@ __maintainer__ = "Gabriel Araujo"
 
 import shutil as sh
 import os
+import re
+
+spkinfo_patterns = [
+    ('USERNAME',  r'(?<=User Name:).*(?=\n)'),
+    ('GENDER',  r'(?<=Gender:).*(?=\n)'),
+    ('AGE',     r'(?<=Age Range:).*(?=\n)'),
+    ('LANGUAGE', r'(?<=Language:).*(?=\n)')
+]
+spkinfo_regex = '|'.join('(?P<%s>%s)' % pair for pair in spkinfo_patterns)
+spkinfo_p = re.compile(spkinfo_regex)
 
 class Speaker:
 
@@ -31,19 +41,24 @@ class Speaker:
         self.id = spkid
         self.source = srcdir
         self.target = trgdir
-        self.prompts = self.audios = None
+        self.prompts = self.info = self.audios = None
+        self._load()
+
+    def _load(self):
+        '''Load the speaker data.'''
         try:
+            self._gatherspkinfo()
             self._gatherprompts()
+            self._gatheraudios()
         except IOError as e:
             print('I/O error(%s): %s %s' % (e.errno, e.strerror, e.filename))
 
-    def load(self):
-        '''Load the speaker data.'''
-        pass
-
     def _gatherspkinfo(self):
         '''Gather all info about that speaker.'''
-        pass
+        filepath = os.path.join(self.source, 'etc', 'README')
+        with open(filepath, mode='r', encoding='utf-8') as f:
+            tinfo = f.read()
+        self.info = {m.lastgroup:m.group(m.lastgroup) for m in spkinfo_p.finditer(tinfo)}
 
     def _gatherprompts(self):
         '''Gather all the transcriptions for that speaker.'''
