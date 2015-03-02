@@ -33,12 +33,20 @@ class GatherPromptsTest(unittest.TestCase):
 
     def test_valid_prompts(self):
         data = "094    Vou tomar um pouquinho d'água. \n095 Para onde a senhora quer ir? \n096   Que horas são? \n\n097 Amanhã é sexta."
-        expdict = {'094': "Vou tomar um pouquinho d'água.", '095': 'Para onde a senhora quer ir?',
+        exp_dict = {'094': "Vou tomar um pouquinho d'água.", '095': 'Para onde a senhora quer ir?',
                    '096': 'Que horas são?', '097': 'Amanhã é sexta.'}
         with mock.patch('voxforge2sphinx.corpus.speaker.open', mock.mock_open(read_data=data),
                         create=True) as m:
-            self.speaker._gatherprompts()
-        self.assertDictEqual(self.speaker.prompts, expdict, 'Dictionary of prompts were loaded incorrectly.')
+            self.speaker._gather_prompts()
+        self.assertEqual(self.speaker.prompts, exp_dict, 'Dictionary of prompts were loaded incorrectly.')
+
+    def test_invalid_prompts(self):
+        data = "094   \nPara onde a senhora quer ir?\n096Que horas são?\n\n"
+        exp_dict = {}
+        with mock.patch('voxforge2sphinx.corpus.speaker.open', mock.mock_open(read_data=data),
+                        create=True) as m:
+            self.speaker._gather_prompts()
+        self.assertEqual(self.speaker.prompts, exp_dict, 'Dictionary of prompts were loaded incorrectly.')
 
 
 if __name__ == "__main__":
