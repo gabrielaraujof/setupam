@@ -1,4 +1,4 @@
-voxforge2sphinxPtBr
+voxforge2sphinxPtBr [![Build Status](https://travis-ci.org/gabrielaraujof/voxforge2sphinxPtBr.svg?branch=major-update)](https://travis-ci.org/gabrielaraujof/voxforge2sphinxPtBr)
 ===================
 
 Set of scripts for supporting the acoustic model building for CMU Sphinx.
