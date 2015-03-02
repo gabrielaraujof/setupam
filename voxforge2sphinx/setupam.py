@@ -28,8 +28,8 @@ from glob import iglob
 from math import floor
 from random import shuffle
 
-import metadata
-import speaker
+from voxforge2sphinx import speaker, metadata
+
 
 parser = argparse.ArgumentParser(description='Structure the voxforge speech corpus in the Sphinx-Train template.')
 
@@ -40,7 +40,7 @@ parser.add_argument('-s', '--source', default='.', help='The source directory fo
 parser.add_argument('-t', '--target', default='.', help='The target directory for setting up the acoustic model training.')
 
 parser.add_argument('-q', '--quota', default=0.1, type=float, \
-	help="The percentage (float value) of speakers selected for the test database. Default=0.1", metavar='Q')
+	help="The percentage (float value) of speakers selected for the tests database. Default=0.1", metavar='Q')
 
 parser.add_argument('-v', '--verbose', help='Print the debug messages.', action="store_true")
 
@@ -78,10 +78,10 @@ if __name__ == '__main__':
 	nspeakers = len(dirs)
 	print("Found {} speakers' directories.".format(nspeakers))
 	
-	# Compute the percentage of the test base
+	# Compute the percentage of the tests base
 	nstest =  floor(dbtest_p * nspeakers)
 	nstrain = nspeakers - nstest
-	print('Selected {} speakers for the train database, and {} speakers for the test database.'.format(nstrain,nstest))
+	print('Selected {} speakers for the train database, and {} speakers for the tests database.'.format(nstrain,nstest))
 
 	shuffle(dirs) #choose speakers randomly
 
@@ -89,7 +89,7 @@ if __name__ == '__main__':
 	for speaker_id in range(nstrain):
 		speaker.add(dirs[speaker_id], speaker_id, wav_dir, train_fileid, train_trans)
 
-	# Iterating over test speakers' directories
+	# Iterating over tests speakers' directories
 	for speaker_id in range(nstrain, nspeakers):
 		speaker.add(dirs[speaker_id], speaker_id, wav_dir, test_fileid, test_trans)			
 			
