@@ -31,49 +31,51 @@ import metadata
 _verbose = True
 
 def _get_wav_files(speakerDir):
-	'''Get all wav files in a given directory.'''
-	return sorted(iglob(path.join(speakerDir, 'wav/*.wav')))
+    '''Get all wav files in a given directory.'''
+    return sorted(iglob(path.join(speakerDir, '*.wav')))
 
 def _create_dir(target, speaker):
-	'''Create the speaker directory.'''
-	d = path.join(target, speaker)
-	if not path.exists(d):
-		try:
-			if _verbose:
-				print("Creating directory '{}'...".format(d), end='')
-			makedirs(d)
-			if _verbose:
-				print('[Done.]')
-		except Exception as err:
-			print("Error while creating directory '{}': ".format(d), err)
-	return d
+    '''Create the speaker directory.'''
+    d = path.join(target, speaker)
+    if not path.exists(d):
+        try:
+            if _verbose:
+                print("Creating directory '{}'...".format(d), end='')
+            makedirs(d)
+            if _verbose:
+                print('[Done.]')
+        except Exception as err:
+            print("Error while creating directory '{}': ".format(d), err)
+    return d
 
 def _copy_wavs(sourcefile, targetpath, wav_ref):
-	'''Copy the wav files from source path to target path.'''
-	dstname = path.join(targetpath, '{}.wav'.format(wav_ref))
-	if not path.exists(dstname):
-		try:
-			(folder, namefile) = path.split(sourcefile)
-			if _verbose:
-				print("Copying wav file '{}'...".format(namefile), end='')
-			copy2(sourcefile, dstname)
-			if _verbose:
-				print('[Done.]')
-			return dstname
-		except Exception as err:
-			print("Error while copying wav file '{}': ".format(namefile), err)
+    '''Copy the wav files from source path to target path.'''
+    dstname = path.join(targetpath, '{}.wav'.format(wav_ref))
+    if not path.exists(dstname):
+        try:
+            (folder, namefile) = path.split(sourcefile)
+            if _verbose:
+                print("Copying wav file '{}'...".format(namefile), end='')
+            copy2(sourcefile, dstname)
+            if _verbose:
+                print('[Done.]')
+            return dstname
+        except Exception as err:
+            print("Error while copying wav file '{}': ".format(namefile), err)
 
 def add(source_dir, speaker_id, wav_dir, file_id, trans):
-	'''Add a speaker to the speech database.'''
-	#if args.verbose:
-	speaker_ref = '{:04}'.format(speaker_id)
-	print("Setting {}. (source: '{}')".format(speaker_ref, source_dir))
-	spk_dir = _create_dir(wav_dir, speaker_ref)
-	spk_prompts = metadata.get_prompts(source_dir)
-	wav_id = 0
-	for wavfile in _get_wav_files(source_dir):
-		wav_id = wav_id + 1
-		wav_ref = '{}_{:03}'.format(speaker_ref, wav_id)
-		_copy_wavs(wavfile, spk_dir, wav_ref)
-		metadata.store_fileids(file_id, speaker_ref, wav_ref)
-		metadata.store_trans(trans, spk_prompts[path.basename(wavfile)], wav_ref)
+    '''Add a speaker to the speech database.'''
+    #if args.verbose:
+    speaker_ref = '{:04}'.format(speaker_id)
+    print("Setting {}. (source: '{}')".format(speaker_ref, source_dir))
+    spk_dir = _create_dir(wav_dir, speaker_ref)
+    spk_prompts = metadata.get_prompts(source_dir)
+    #print(spk_prompts)
+
+    wav_id = 0
+    for wav_file in _get_wav_files(source_dir):
+        wav_id = wav_id + 1
+        wav_ref = '{}_{:03}'.format(speaker_ref, wav_id)
+        _copy_wavs(wav_file, spk_dir, wav_ref)
+        metadata.store_fileids(file_id, speaker_ref, wav_ref)
+        metadata.store_trans(trans, spk_prompts[path.basename(wav_file).replace('wav', 'txt')], wav_ref)

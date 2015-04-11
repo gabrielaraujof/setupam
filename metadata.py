@@ -24,32 +24,41 @@ __maintainer__ = "Gabriel Araujo"
 
 import re
 from os import path
+import pathlib as pl
+import glob as g
 
 _verbose = True
 
 def get_prompts(speaker_dir):
-	'''Get the list of iriginal prompts of the given speaker.'''
-	with open(path.join(speaker_dir, 'etc', 'prompts-original'), mode='r', encoding='utf-8') as p_file:
-		prompts =  [x.split(maxsplit=1) for x in p_file.readlines()]
-	return {x[0]+'.wav':re.search('[^\n]+', x[1]).group(0) for x in prompts}
+    '''Get the list of iriginal prompts of the given speaker.'''
+    files_path = pl.Path(speaker_dir) / '*.txt'
+    prompts = []
+    for audio in sorted(g.iglob(str(files_path))):
+        #print('>>>>' + audio)
+        with open(audio, mode='r', encoding='utf-8') as p_file:
+            prompts.append([audio, p_file.readline()])
+
+    #with open(path.join(speaker_dir, 'etc', 'prompts-original'), mode='r', encoding='utf-8') as p_file:
+    #    prompts =  [x.split(maxsplit=1) for x in p_file.readlines()]
+    return {pl.Path(x[0]).name:re.search('[^\n]+', x[1]).group(0) for x in prompts}
 
 def _store(file_path, data):
-	'''Store some metadata in a file.'''
-	with open(file_path, mode='a', encoding='iso-8859-1') as file:
-		if _verbose:
-			print("Storing '{}' in {}.".format(data, path.split(file_path)[1]))
-		file.write(data + '\n')
+    '''Store some metadata in a file.'''
+    with open(file_path, mode='a', encoding='iso-8859-1') as file:
+        if _verbose:
+            print("Storing '{}' in {}.".format(data, path.split(file_path)[1]))
+        file.write(data + '\n')
 
 def store_fileids(file_path, speaker_ref, wav_ref):
-	_store(file_path, '{}/{}'.format(speaker_ref, wav_ref))
+    _store(file_path, '{}/{}'.format(speaker_ref, wav_ref))
 
 def _build_trans(prompt, wav_ref):
-	prompt = prompt.lower()
-	pattern = re.compile('[,.?!]+')
-	prompt = pattern.sub('', prompt)
-	return '<s> {} </s> ({})'.format(prompt, wav_ref)
+    prompt = prompt.lower()
+    pattern = re.compile('[,.?!]+')
+    prompt = pattern.sub('', prompt)
+    return '<s> {} </s> ({})'.format(prompt, wav_ref)
 
 def store_trans(file_path, prompt, wav_ref):
-	'''Store the transcription of a wav file'''
-	trans = _build_trans(prompt, wav_ref)
-	_store(file_path, trans)
+    '''Store the transcription of a wav file'''
+    trans = _build_trans(prompt, wav_ref)
+    _store(file_path, trans)
