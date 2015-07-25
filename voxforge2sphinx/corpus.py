@@ -27,6 +27,7 @@ import glob
 from shutil import copy2
 import re
 import sys
+from collections import UserDict
 
 info_attributes = [
     ('USERNAME', r'(?<=User Name:).*(?=\n)'),
@@ -40,32 +41,48 @@ info_regex = re.compile(info_pattern)
 
 class Corpus:
     """Handle the organization and compilation of the speech corpus."""
+
+    AUDIO_DIR = 'wav'
+    METADATA_DIR = 'etc'
+
+    FILEID_EXT = 'fileids'
+    TRANSC_EXT = 'transcription'
+
     speaker_counter = 0
     audio_counter = 0
 
-    def __init__(self, name, source_path, target_path, audio_fmt='wav'):
+    def __init__(self, name, suffix, source_path, target_path, audio_fmt='wav'):
         self.name = name
+        self.suffix = suffix
         self.speakers = []
         self.src = source_path
-        self.tgt = target_path
+        self.base_path = target_path
+        self.corpus_path = path.join(self.base_path, self.name)
         self.audio_format = audio_fmt
 
     @staticmethod
+    def track_files(file_path, file_format):
+        return glob.glob('{}/*.{}'.format(file_path, file_format)).sort()
+
+    @staticmethod
     def format_speaker_id(spk_id):
-        assert isinstance(spk_id, int)
         return '{:06}'.format(spk_id)
 
     @staticmethod
     def format_audio_id(spk_id, audio_id):
-        assert isinstance(spk_id, int)
-        assert isinstance(audio_id, int)
         return '{}_{:03}'.format(Corpus.format_speaker_id(spk_id), audio_id)
 
-    @staticmethod
-    def track_files(file_path, file_format):
-        assert isinstance(file_path, str)
-        assert isinstance(file_format, str)
-        return glob.glob('{}/*.{}'.format(file_path, file_format)).sort()
+    def format_filename(self, ext):
+        return '{0}_{1}.{2}'.format(self.name, self.suffix, ext)
+
+    def set_up(self):
+        assert not path.exists(self.corpus_path)
+        self.create_folder(Corpus.AUDIO_DIR)
+        self.create_folder(Corpus.METADATA_DIR)
+        trans_filename = self.format_filename(Corpus.TRANSC_EXT)
+        self.trans_file = TranscriptionFile(path.join(self.corpus_path, Corpus.METADATA_DIR, trans_filename))
+        fileid_filename = self.format_filename(Corpus.FILEID_EXT)
+        self.fileid_file = FileidFile(path.join(self.corpus_path, Corpus.METADATA_DIR, fileid_filename))
 
     def add_speaker(self, speaker):
         assert isinstance(speaker, Speaker)
@@ -80,36 +97,50 @@ class Corpus:
         audio_ref = 0
         for spk_id, spk in enumerate(self.speakers, start=1):
             spk_repr = Corpus.format_speaker_id(spk_id)
-            target_path = self.create_sub_folder(spk_repr)
+            target_path = self.create_folder(spk_repr)
+            trans = spk.gather_transcription()
             for audio in spk.gather_audios(audio_format=self.audio_format):
-                audio_repr = Corpus.format_audio_id(spk_id, audio_ref)
-                new_filename = path.join(target_path, '{}.{}'.format(audio_repr, self.audio_format))
-                try:
-                    copy2(audio, new_filename)
-                    # TODO Store fileid (metadata.store_fileids(file_id, speaker_ref, wav_ref))
-                    # TODO Store transcription (metadata.store_trans(trans, prompts[path.basename(wavfile)], wav_ref))
-                    audio_ref += 1
-                except IOError as e:
-                    print('I/O error(%s): %s %s' % (e.errno, e.strerror, e.filename))
-                    sys.exit(1)
+                audio_name = path.splitext(path.basename(audio))[0]
+                if audio_name in trans:  # Has transcription?
+                    audio_repr = Corpus.format_audio_id(spk_id, audio_ref)
+                    new_filename = path.join(target_path, '{}.{}'.format(audio_repr, self.audio_format))
+                    try:
+                        copy2(audio, new_filename)
+                        self.trans_file.add_content(trans[audio_name].lower())
+                        self.fileid_file.add_content(spk_repr, audio_repr)
+                        audio_ref += 1
+                    except IOError as e:
+                        print('I/O error(%s): %s %s' % (e.errno, e.strerror, e.filename))
+                        sys.exit(1)
 
-    def create_sub_folder(self, sub_folder):
-        directory = path.join(self.tgt, sub_folder)
-        makedirs(directory)
-        return directory
+    # def process_audio(self, audio_file, trans):
+    #    # TODO copiar audio
+    #    # TODO adicionar transc
+    #    # TODO adicionar fileid
+    #    pass
+
+    def store_files(self):
+        self.trans_file.store()
+        self.fileid_file.store()
+
+    def create_folder(self, folder_path, absolute=False):
+        full_path = folder_path if absolute else path.join(self.corpus_path, folder_path)
+        makedirs(full_path)
+        return full_path
 
 
 class Speaker:
     """Handle the tasks strictly related to speakers entities."""
 
     def __init__(self, source_path, audio_path='wav', metadata_path='etc'):
-        #assert path.exists(source_path)
+        assert path.exists(source_path)
         self.src = source_path
+        self.name = path.basename(self.src)
         self.audio_path = audio_path
-        self.metadata_path = metadata_path
+        self.metadata_path = path.join(self.src, metadata_path)
+        self.trans = None
 
     def gather_metadata(self, file='README', regex=info_regex):
-        assert isinstance(file, str)
         file_path = path.join(self.src, self.metadata_path, file)
         with open(file_path, mode='r', encoding='utf-8') as f:
             content_file = f.read()
@@ -118,25 +149,93 @@ class Speaker:
         except AttributeError as e:
             print('Invalid regular expression object: {}'.format(e))
 
-    def gather_transcription(self, file='prompts-original', multi=False, format_file='.txt'):
-        if not multi:
-            assert isinstance(file, str)
-            file_path = path.join(self.src, self.metadata_path, file)
-            with open(file_path, mode='r', encoding='utf-8') as f:
-                transcriptions = {}
-                for line in f.readlines():
-                    m = re.search(r"(?P<id>^\d+)[ ]+(?P<prompt>\S+( \S+)*)", line)
-                    if m:
-                        transcriptions[m.group('id')] = m.group('prompt')
-            return transcriptions
-        else:
-            assert isinstance(format_file, str)
-            trans_files = Corpus.track_files(self.src, format_file)
-            transcriptions = {}
-            for trans_file in trans_files:
-                with open(trans_file, mode='r', encoding='utf-8') as f:
-                    transcriptions[path.splitext(path.basename(trans_file))[0]] = f.readline()
-            return transcriptions
+    def gather_transcription(self, **kwargs):
+        sub_folder = path.join(self.metadata_path, 'prompts-original')
+        root_folder = path.join(self.src, '{}.txt'.format(self.name))
+        path_list = kwargs.get('path_list', (sub_folder, root_folder))
+        self.trans = Prompts.create_prompts(*path_list, multi_path=self.src)
 
     def gather_audios(self, audio_format='wav'):
         return Corpus.track_files(path.join(self.src, self.audio_path), audio_format)
+
+
+class FileWriter:
+
+    def __init__(self, file_path):
+        assert path.exists(path.dirname(file_path))
+        self.file = file_path
+        self.content = []
+
+    @classmethod
+    def format_content(cls, args):
+        return cls.FORMAT.format(*args)
+
+    def add_content(self, *args):
+        formatted_content = FileWriter.format_content(args)
+        self.content.append(formatted_content)
+
+    def store(self):
+        with open(self.file, mode='a', encoding='iso-8859-1') as file:
+            for line in self.content:
+                file.write(line + '\n')
+
+
+class TranscriptionFile(FileWriter):
+
+    FORMAT = '<s> {0} </s> ({1})'
+    trans_regex = re.compile('\S*[,.?!]+\S*')
+
+    def __init__(self, target_file):
+        super().__init__(target_file)
+
+    def add_content(self, *args):
+        filtered_trans = TranscriptionFile.trans_regex.sub(' ', args[0])
+        super().add_content(filtered_trans, *args[1:])
+
+
+class FileidFile(FileWriter):
+
+    FORMAT = '{0}/{1}'
+
+    def __init__(self, target_file):
+        super().__init__(target_file)
+
+
+class Prompts(UserDict):
+
+    def __init__(self, *args):
+        super().__init__()
+        self.load_prompts(*args)
+
+    def load_prompts(self, *args):
+        raise NotImplementedError
+
+    @staticmethod
+    def create_prompts(*args, **kwargs):
+        assert (len(args) > 0) and ('multi_path' in kwargs)
+        for file_path in args:
+            if path.exists(file_path):
+                return SingleFilePrompts(file_path)
+        else:
+            return MultiFilePrompts(kwargs['multi_path'], kwargs.get('ext', 'txt'))
+
+
+class SingleFilePrompts(Prompts):
+
+    PROMPT_PATTERN = r"(?P<id>^\d+).?[ ]+(?P<prompt>\S+( \S+)*)"
+
+    def load_prompts(self, *args):
+        with open(args[0], mode='r', encoding='utf-8') as f:
+            for line in f.readlines():
+                m = re.search(SingleFilePrompts.PROMPT_PATTERN, line)
+                if m:
+                    self.data[m.group('id')] = m.group('prompt').lower()
+
+
+class MultiFilePrompts(Prompts):
+
+    def load_prompts(self, *args):
+        file_path, ext = args
+        for trans_file in Corpus.track_files(file_path, ext):
+            with open(trans_file, mode='r', encoding='utf-8') as f:
+                self.data[path.splitext(path.basename(trans_file))[0]] = f.readline().lower()
