@@ -19,32 +19,46 @@
 __author__ = 'Gabriel Araujo'
 
 import unittest
-from unittest import mock
+from unittest import mock as mk
+from os import path
 
-from voxforge2sphinx.corpus import Speaker
+import voxforge2sphinx.corpus as cps
 
 
-class GatherPromptsTest(unittest.TestCase):
+class CorpusTest(unittest.TestCase):
+
+    @mk.patch('voxforge2sphinx.corpus.glob.glob')
+    def test_track_files(self, mock_glob):
+        cps.Corpus.track_files('file_path', 'ext')
+        mock_glob.assert_called_with(path.join('file_path', '*.ext'))
+
+
+class PromptsTest(unittest.TestCase):
     def setUp(self):
-        self.spkid = 0
-        self.spksrc = 'src'
-        self.spktrg = 'trg'
-        self.speaker = Speaker(self.spksrc)
+        pass
 
-    def test_valid_prompts(self):
-        data = "094    Vou tomar um pouquinho d'água. \n095 Para onde a senhora quer ir? \n096   Que horas são? \n\n097 Amanhã é sexta."
-        exp_dict = {'094': "Vou tomar um pouquinho d'água.", '095': 'Para onde a senhora quer ir?',
-                   '096': 'Que horas são?', '097': 'Amanhã é sexta.'}
-        with mock.patch('voxforge2sphinx.corpus.open', mock.mock_open(read_data=data),
-                        create=True) as m:
-            self.assertEqual(self.speaker.gather_transcription(), exp_dict, 'Dictionary of prompts were loaded incorrectly.')
+    def test_valid_single(self):
+        data = "094    Vou tomar um pouquinho d'água. \n095 Para onde a senhora quer ir? \n" + \
+               "096   Que horas são? \n\n097 Amanhã é sexta.\n16.       Para onde a senhora quer ir?"
+        exp_dict = {'094': "vou tomar um pouquinho d'água.", '095': 'para onde a senhora quer ir?',
+                    '096': 'que horas são?', '097': 'amanhã é sexta.', '16': 'para onde a senhora quer ir?'}
 
-    def test_invalid_prompts(self):
+        with mk.patch('voxforge2sphinx.corpus.open', mk.mock_open(read_data=data), create=True) as m:
+            self.assertEqual(cps.SingleFilePrompts(''), exp_dict, 'Dictionary of prompts were loaded incorrectly.')
+
+    def test_invalid_single(self):
         data = "094   \nPara onde a senhora quer ir?\n096Que horas são?\n\n"
-        exp_dict = {}
-        with mock.patch('voxforge2sphinx.corpus.open', mock.mock_open(read_data=data),
+        with mk.patch('voxforge2sphinx.corpus.open', mk.mock_open(read_data=data),
                         create=True) as m:
-            self.assertEqual(self.speaker.gather_transcription(), exp_dict, 'Dictionary of prompts were loaded incorrectly.')
+            self.assertEqual(cps.SingleFilePrompts(''), {}, 'Dictionary of prompts were loaded incorrectly.')
+
+    @mk.patch('voxforge2sphinx.corpus.Corpus.track_files', return_value=['/home/user/test.txt'])
+    @mk.patch('voxforge2sphinx.corpus.open', mk.mock_open(read_data="Vou tomar um pouquinho d'água"), create=True)
+    def test_multi(self, mock_track_files):
+        multi = cps.MultiFilePrompts('/home/user/', 'txt')
+        mock_track_files.assert_called_with('/home/user/', 'txt')
+        self.assertTrue('test' in multi)
+        self.assertEqual(multi['test'], "vou tomar um pouquinho d'água")
 
 
 if __name__ == "__main__":
