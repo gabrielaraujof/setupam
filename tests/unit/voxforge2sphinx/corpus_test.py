@@ -39,16 +39,70 @@ class SpeakerTest(unittest.TestCase):
         self.speaker = cps.Speaker(self._id, self.src_path)
 
 
+class SpkBuilderPromptsTest(unittest.TestCase):
+
+    def setUp(self):
+        self.builder = cps.SpeakerBuilder(0, 'test')
+
+    def test_no_source_fails(self):
+        self.builder.set_prompts()
+        self.assertEqual(self.builder.speaker.prompts, None)
+        self.builder.set_prompts('file1', 'file2')
+        self.assertEqual(self.builder.speaker.prompts, None)
+        self.builder.set_prompts(multi='folder')
+        self.assertEqual(self.builder.speaker.prompts, None)
+
+    @mk.patch('voxforge2sphinx.corpus.Prompts.create_prompts')
+    def test_no_source_both(self, mock_prompts):
+        self.builder.set_prompts('file1', 'file2', multi='folder')
+        calls = [mk.call('file1', 'file2', multi_path='folder'), mk.call().populate()]
+        mock_prompts.assert_has_calls(calls)
+
+    @mk.patch('voxforge2sphinx.corpus.Prompts.create_prompts')
+    def test_source_no_args(self, mock_prompts):
+        self.builder.relative_path = '/home'
+        self.builder.set_prompts()
+        paths = [path.join('/home', *args) for args in [('etc', 'prompts-original'), ('test.txt',)]]
+        calls = [mk.call(*paths, multi_path='/home'), mk.call().populate()]
+        mock_prompts.assert_has_calls(calls)
+
+    @mk.patch('voxforge2sphinx.corpus.Prompts.create_prompts')
+    def test_source_only_path(self, mock_prompts):
+        self.builder.relative_path = '/home'
+        self.builder.set_prompts('file1', 'file2')
+        paths = [
+            path.join('/home', *args) for args in [('file1',), ('file2',), ('etc', 'prompts-original'), ('test.txt',)]]
+        calls = [mk.call(*paths, multi_path='/home'), mk.call().populate()]
+        mock_prompts.assert_has_calls(calls)
+
+    @mk.patch('voxforge2sphinx.corpus.Prompts.create_prompts')
+    def test_source_only_multi(self, mock_prompts):
+        self.builder.relative_path = '/home'
+        self.builder.set_prompts(multi='folder')
+        paths = [path.join('/home', *args) for args in [('etc', 'prompts-original'), ('test.txt',)]]
+        calls = [mk.call(*paths, multi_path=path.join('/home', 'folder')), mk.call().populate()]
+        mock_prompts.assert_has_calls(calls)
+
+    @mk.patch('voxforge2sphinx.corpus.Prompts.create_prompts')
+    def test_source_both(self, mock_prompts):
+        self.builder.relative_path = '/home'
+        self.builder.set_prompts('file1', multi='folder')
+        paths = [
+            path.join('/home', *args) for args in [('file1',), ('etc', 'prompts-original'), ('test.txt',)]]
+        calls = [mk.call(*paths, multi_path=path.join('/home', 'folder')), mk.call().populate()]
+        mock_prompts.assert_has_calls(calls)
+
+
+
+
 class SpkBuilderMetadataTest(unittest.TestCase):
 
     def setUp(self):
         self.builder = cps.SpeakerBuilder(0, 'test')
 
-    def test_no_source_no_args(self):
+    def test_no_source_fails(self):
         self.builder.set_metadata()
         self.assertEqual(self.builder.speaker.metadata, None)
-
-    def test_no_source_only_regex(self):
         self.builder.set_metadata(regex='')
         self.assertEqual(self.builder.speaker.metadata, None)
 
