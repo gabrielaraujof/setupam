@@ -135,9 +135,35 @@ class AudiosTest(unittest.TestCase):
         return_list = ('/home/001.wav', '/home/audio.raw', 'file.mp3')
         with mk.patch('voxforge2sphinx.corpus.track_files', return_value=return_list):
             self.audios.populate()
-            self.assertTupleEqual(
+            self.assertEqual(
                 tuple(self.audios),
                 (('001', '/home/001.wav'), ('audio', '/home/audio.raw'), ('file', 'file.mp3')))
+
+class MetadataTest(unittest.TestCase):
+
+    def setUp(self):
+        self.metadata = cps.Metadata('')
+
+    def test_populate(self):
+        content_file = '''
+        User Name:anonymous
+
+        Speaker Characteristics:
+
+        Gender: desconhecido
+        Age Range: desconhecido
+        Language: PT_BR
+        Pronunciation dialect: desconhecido
+        '''
+        exp_dict = {
+            'USERNAME': 'anonymous',
+            'GENDER': 'desconhecido',
+            'AGE': 'desconhecido',
+            'LANGUAGE': 'PT_BR'
+        }
+        with mk.patch('voxforge2sphinx.corpus.open', mk.mock_open(read_data=content_file), create=True):
+            self.metadata.populate()
+            self.assertEqual(self.metadata, exp_dict)
 
 if __name__ == "__main__":
     unittest.main()
