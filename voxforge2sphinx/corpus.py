@@ -27,7 +27,7 @@ import glob
 from shutil import copy2
 import re
 import sys
-from collections import UserDict
+from collections import UserDict, UserList
 
 info_attributes = [
     ('USERNAME', r'(?<=User Name:).*(?=\n)'),
@@ -156,13 +156,59 @@ class Speaker:
         self.trans = Prompts.create_prompts(*path_list, multi_path=self.src)
 
     def gather_audios(self, audio_format='wav'):
-        return Corpus.track_files(path.join(self.src, self.audio_path), audio_format)
+        audios_files = Corpus.track_files(path.join(self.src, self.audio_path), audio_format)
+        for file_path in audios_files:
+            yield path.splitext(path.basename(file_path))[0], file_path
+
+
+class Prompts(UserDict):
+
+    def __init__(self, *args):
+        super().__init__()
+        self.load_prompts(*args)
+
+    def load_prompts(self, *args):
+        raise NotImplementedError
+
+    @staticmethod
+    def create_prompts(*args, **kwargs):
+        if len(args) < 1:
+            raise TypeError('Missing positional arguments. At least one must be given.')
+        if 'multi_path' not in kwargs:
+            raise TypeError('Missing keyword argument "multi_path".')
+        for file_path in args:
+            if path.exists(file_path):
+                return SingleFilePrompts(file_path)
+        else:
+            return MultiFilePrompts(kwargs['multi_path'], kwargs.get('ext', 'txt'))
+
+
+class SingleFilePrompts(Prompts):
+
+    PROMPT_PATTERN = r"(?P<id>^\d+).?[ ]+(?P<prompt>\S+( \S+)*)"
+
+    def load_prompts(self, *args):
+        with open(args[0], mode='r', encoding='utf-8') as f:
+            for line in f.readlines():
+                m = re.search(SingleFilePrompts.PROMPT_PATTERN, line)
+                if m:
+                    self.data[m.group('id')] = m.group('prompt').lower()
+
+
+class MultiFilePrompts(Prompts):
+
+    def load_prompts(self, *args):
+        file_path, ext = args
+        for trans_file in Corpus.track_files(file_path, ext):
+            with open(trans_file, mode='r', encoding='utf-8') as f:
+                first_line = f.readline()
+                if first_line.strip():
+                    self.data[path.splitext(path.basename(trans_file))[0]] = first_line.lower()
 
 
 class FileWriter:
 
     def __init__(self, file_path):
-        assert path.exists(path.dirname(file_path))
         self.file = file_path
         self.content = []
 
@@ -171,7 +217,7 @@ class FileWriter:
         return cls.FORMAT.format(*args)
 
     def add_content(self, *args):
-        formatted_content = FileWriter.format_content(args)
+        formatted_content = self.format_content(args)
         self.content.append(formatted_content)
 
     def store(self):
@@ -199,43 +245,3 @@ class FileidFile(FileWriter):
 
     def __init__(self, target_file):
         super().__init__(target_file)
-
-
-class Prompts(UserDict):
-
-    def __init__(self, *args):
-        super().__init__()
-        self.load_prompts(*args)
-
-    def load_prompts(self, *args):
-        raise NotImplementedError
-
-    @staticmethod
-    def create_prompts(*args, **kwargs):
-        assert (len(args) > 0) and ('multi_path' in kwargs)
-        for file_path in args:
-            if path.exists(file_path):
-                return SingleFilePrompts(file_path)
-        else:
-            return MultiFilePrompts(kwargs['multi_path'], kwargs.get('ext', 'txt'))
-
-
-class SingleFilePrompts(Prompts):
-
-    PROMPT_PATTERN = r"(?P<id>^\d+).?[ ]+(?P<prompt>\S+( \S+)*)"
-
-    def load_prompts(self, *args):
-        with open(args[0], mode='r', encoding='utf-8') as f:
-            for line in f.readlines():
-                m = re.search(SingleFilePrompts.PROMPT_PATTERN, line)
-                if m:
-                    self.data[m.group('id')] = m.group('prompt').lower()
-
-
-class MultiFilePrompts(Prompts):
-
-    def load_prompts(self, *args):
-        file_path, ext = args
-        for trans_file in Corpus.track_files(file_path, ext):
-            with open(trans_file, mode='r', encoding='utf-8') as f:
-                self.data[path.splitext(path.basename(trans_file))[0]] = f.readline().lower()
