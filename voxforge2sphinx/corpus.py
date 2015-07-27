@@ -163,11 +163,7 @@ class Speaker:
 
 class Prompts(UserDict):
 
-    def __init__(self, *args):
-        super().__init__()
-        self.load_prompts(*args)
-
-    def load_prompts(self, *args):
+    def load_prompts(self):
         raise NotImplementedError
 
     @staticmethod
@@ -187,8 +183,12 @@ class SingleFilePrompts(Prompts):
 
     PROMPT_PATTERN = r"(?P<id>^\d+).?[ ]+(?P<prompt>\S+( \S+)*)"
 
-    def load_prompts(self, *args):
-        with open(args[0], mode='r', encoding='utf-8') as f:
+    def __init__(self, file_path):
+        super().__init__()
+        self.file_path = file_path
+
+    def load_prompts(self):
+        with open(self.file_path, mode='r', encoding='utf-8') as f:
             for line in f.readlines():
                 m = re.search(SingleFilePrompts.PROMPT_PATTERN, line)
                 if m:
@@ -197,9 +197,13 @@ class SingleFilePrompts(Prompts):
 
 class MultiFilePrompts(Prompts):
 
-    def load_prompts(self, *args):
-        file_path, ext = args
-        for trans_file in Corpus.track_files(file_path, ext):
+    def __init__(self, file_path, ext):
+        super().__init__()
+        self.file_path = file_path
+        self.ext = ext
+
+    def load_prompts(self):
+        for trans_file in Corpus.track_files(self.file_path, self.ext):
             with open(trans_file, mode='r', encoding='utf-8') as f:
                 first_line = f.readline()
                 if first_line.strip():
