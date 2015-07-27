@@ -35,14 +35,74 @@ class CorpusTest(unittest.TestCase):
 class SpeakerTest(unittest.TestCase):
     def setUp(self):
         self.src_path = '/home/user/source'
-        self.speaker = cps.Speaker(self.src_path)
+        self._id = 0
+        self.speaker = cps.Speaker(self._id, self.src_path)
 
-    def test_gather_audios(self):
-        return_list = ('/home/001.wav', '/home/audio.raw', 'file.mp3')
-        with mk.patch('voxforge2sphinx.corpus.track_files', return_value=return_list):
-            self.assertTupleEqual(
-                tuple(self.speaker.gather_audios()),
-                (('001', '/home/001.wav'), ('audio', '/home/audio.raw'), ('file', 'file.mp3')))
+
+class SpkBuilderMetadataTest(unittest.TestCase):
+
+    def setUp(self):
+        self.builder = cps.SpeakerBuilder(0, 'test')
+
+    def test_no_source_no_args(self):
+        self.builder.set_metadata()
+        self.assertEqual(self.builder.speaker.metadata, None)
+
+    def test_no_source_only_regex(self):
+        self.builder.set_metadata(regex='')
+        self.assertEqual(self.builder.speaker.metadata, None)
+
+    @mk.patch('voxforge2sphinx.corpus.Metadata.populate')
+    def test_no_source_only_path(self, mock_populate):
+        self.builder.set_metadata(path='test_path')
+        self.assertEqual(self.builder.speaker.metadata, {})
+        self.assertEqual(self.builder.speaker.metadata.path, 'test_path')
+        self.assertEqual(self.builder.speaker.metadata.re, cps.Metadata.REGEX)
+        mock_populate.assert_called()
+
+    @mk.patch('voxforge2sphinx.corpus.Metadata.populate')
+    def test_no_source_both(self, mock_populate):
+        self.builder.set_metadata(path='test_path', regex='test')
+        self.assertEqual(self.builder.speaker.metadata, {})
+        self.assertEqual(self.builder.speaker.metadata.path, 'test_path')
+        self.assertEqual(self.builder.speaker.metadata.re, 'test')
+        mock_populate.assert_called()
+
+    @mk.patch('voxforge2sphinx.corpus.Metadata.populate')
+    def test_source_no_args(self, mock_populate):
+        self.builder.relative_path = '/home'
+        self.builder.set_metadata()
+        self.assertEqual(self.builder.speaker.metadata, {})
+        self.assertEqual(self.builder.speaker.metadata.path, path.join('/home', 'etc', 'README'))
+        self.assertEqual(self.builder.speaker.metadata.re, cps.Metadata.REGEX)
+        mock_populate.assert_called()
+
+    @mk.patch('voxforge2sphinx.corpus.Metadata.populate')
+    def test_source_only_regex(self, mock_populate):
+        self.builder.relative_path = '/home'
+        self.builder.set_metadata(regex='re_test')
+        self.assertEqual(self.builder.speaker.metadata, {})
+        self.assertEqual(self.builder.speaker.metadata.path, path.join('/home', 'etc', 'README'))
+        self.assertEqual(self.builder.speaker.metadata.re, 're_test')
+        mock_populate.assert_called()
+
+    @mk.patch('voxforge2sphinx.corpus.Metadata.populate')
+    def test_source_only_path(self, mock_populate):
+        self.builder.relative_path = '/home'
+        self.builder.set_metadata(path='test_path')
+        self.assertEqual(self.builder.speaker.metadata, {})
+        self.assertEqual(self.builder.speaker.metadata.path, path.join('/home', 'test_path'))
+        self.assertEqual(self.builder.speaker.metadata.re, cps.Metadata.REGEX)
+        mock_populate.assert_called()
+
+    @mk.patch('voxforge2sphinx.corpus.Metadata.populate')
+    def test_source_both(self, mock_populate):
+        self.builder.relative_path = '/home'
+        self.builder.set_metadata(path='test_path', regex='test')
+        self.assertEqual(self.builder.speaker.metadata, {})
+        self.assertEqual(self.builder.speaker.metadata.path, path.join('/home', 'test_path'))
+        self.assertEqual(self.builder.speaker.metadata.re, 'test')
+        mock_populate.assert_called()
 
 
 class FileWriterTest(unittest.TestCase):
