@@ -164,32 +164,52 @@ class FileidWriter(FileWriter):
 class Speaker:
     """Handle the tasks strictly related to speakers entities.
     """
-    def __init__(self, source_path, audio_path='wav', metadata_path='etc'):
-        self.src = source_path
-        self.name = path.basename(self.src)
-        self.audio_path = audio_path
-        self.metadata_path = path.join(self.src, metadata_path)
-        self.trans = None
+    def __init__(self, id_number, name):
+        self._id = id_number
+        self.name = name
+        self.metadata = self.prompts = self.audios = None
 
-    # def gather_metadata(self, file='README', regex=SpeakerMetadata.REGEX):
-    #     file_path = path.join(self.src, self.metadata_path, file)
-    #     with open(file_path, mode='r', encoding='utf-8') as f:
-    #         content_file = f.read()
-    #     try:
-    #         return {m.lastgroup: m.group(m.lastgroup) for m in regex.finditer(content_file)}
-    #     except AttributeError as e:
-    #         print('Invalid regular expression object: {}'.format(e))
 
-    def gather_transcription(self, **kwargs):
-        sub_folder = path.join(self.metadata_path, 'prompts-original')
-        root_folder = path.join(self.src, '{}.txt'.format(self.name))
-        path_list = kwargs.get('path_list', (sub_folder, root_folder))
-        self.trans = Prompts.create_prompts(*path_list, multi_path=self.src)
+class SpeakerBuilder:
 
-    def gather_audios(self, audio_format='wav'):
-        audios_files = track_files(path.join(self.src, self.audio_path), audio_format)
-        for file_path in audios_files:
-            yield path.splitext(path.basename(file_path))[0], file_path
+    def __init__(self, _id, name, source_path=None):
+        self._speaker = Speaker(_id, name)
+        self.relative_path = source_path
+
+    @property
+    def speaker(self):
+        return self._speaker
+
+    def set_audios(self, audios_path, audio_format='wav'):
+        full_path = path.join(self.relative_path, audios_path) if self.relative_path else audios_path
+        audios_list = Audios(full_path, audio_format)
+        audios_list.populate()
+        self.speaker.audios = audios_list
+
+    def set_prompts(self, *args, **kwargs):
+        single_path_list = list(args)
+        multi_path = kwargs.get('multi')
+        if self.relative_path:
+            single_path_list = [path.join(self.relative_path, p) for p in single_path_list]
+            single_path_list.append(path.join(self.relative_path, 'etc', 'prompts-original'))
+            single_path_list.append(path.join(self.relative_path, '{}.txt'.format(self.speaker.name)))
+            multi_path = path.join(self.relative_path, multi_path) if multi_path else self.relative_path
+        if single_path_list and multi_path:
+            prompts = Prompts.create_prompts(*single_path_list, multi_path=multi_path)
+            prompts.populate()
+            self.speaker.prompts = prompts
+
+    def set_metadata(self, **kwargs):
+        full_path = kwargs.get('path')
+        if self.relative_path:
+            if full_path:
+                full_path = path.join(self.relative_path, full_path)
+            else:
+                full_path = path.join(self.relative_path, 'etc', 'README')
+        if full_path:
+            metadata = Metadata(full_path, kwargs['regex']) if 'regex' in kwargs else Metadata(full_path)
+            metadata.populate()
+            self.speaker.metadata = metadata
 
 
 class Prompts(UserDict):
@@ -243,7 +263,7 @@ class MultiFilePrompts(Prompts):
 
 class Audios(UserList):
 
-    def __init__(self, audios_path, audio_format='wav'):
+    def __init__(self, audios_path, audio_format):
         super().__init__()
         self.path = audios_path
         self.format = audio_format
