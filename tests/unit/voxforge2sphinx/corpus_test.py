@@ -129,7 +129,7 @@ class MultiFilePromptsTest(unittest.TestCase):
 class AudiosTest(unittest.TestCase):
 
     def setUp(self):
-        self.audios = cps.Audios('')
+        self.audios = cps.Audios('', '')
 
     def test_populate(self):
         return_list = ('/home/001.wav', '/home/audio.raw', 'file.mp3')
