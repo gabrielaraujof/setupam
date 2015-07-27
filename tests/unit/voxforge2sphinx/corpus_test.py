@@ -57,13 +57,13 @@ class FileWriterTest(unittest.TestCase):
         self.assertEqual(fileid.content[0], cps.FileidFile.FORMAT.format(*text))
 
 
-
 class PromptsTest(unittest.TestCase):
 
     @mk.patch('voxforge2sphinx.corpus.Corpus.track_files', return_value=['t.txt'])
     def test_prompts(self, mock_track_files):
         with self.assertRaises(NotImplementedError):
-            cps.Prompts()
+            prompts = cps.Prompts()
+            prompts.load_prompts()
         with self.assertRaisesRegex(TypeError, 'Missing positional argument'):
             cps.Prompts.create_prompts()
         with self.assertRaisesRegex(TypeError, 'Missing.*"multi_path"'):
@@ -73,13 +73,21 @@ class PromptsTest(unittest.TestCase):
             with mk.patch('voxforge2sphinx.corpus.path.exists', return_value=False):
                 multi_prompt = cps.Prompts.create_prompts('', multi_path='')
                 self.assertIsInstance(multi_prompt, cps.MultiFilePrompts)
+                multi_prompt.load_prompts()
                 self.assertEqual(len(multi_prompt), 0)
 
         with mk.patch('voxforge2sphinx.corpus.open', mk.mock_open(), create=True):
             with mk.patch('voxforge2sphinx.corpus.path.exists', return_value=True):
                 single_prompt = cps.Prompts.create_prompts('', multi_path='')
                 self.assertIsInstance(single_prompt, cps.SingleFilePrompts)
+                single_prompt.load_prompts()
                 self.assertEqual(len(single_prompt), 0)
+
+
+class SingleFilePromptsTest(unittest.TestCase):
+
+    def setUp(self):
+        self.prompts = cps.SingleFilePrompts('')
 
     def test_valid_single(self):
         data = "094    Vou tomar um pouquinho d'água. \n095 Para onde a senhora quer ir? \n" + \
@@ -88,17 +96,23 @@ class PromptsTest(unittest.TestCase):
                     '096': 'que horas são?', '097': 'amanhã é sexta.', '16': 'para onde a senhora quer ir?'}
 
         with mk.patch('voxforge2sphinx.corpus.open', mk.mock_open(read_data=data), create=True):
-            self.assertEqual(cps.SingleFilePrompts(''), exp_dict)
+            self.prompts.load_prompts()
+            self.assertEqual(self.prompts, exp_dict)
 
     def test_invalid_single(self):
         data = "094   \nPara onde a senhora quer ir?\n096Que horas são?\n\n"
         with mk.patch('voxforge2sphinx.corpus.open', mk.mock_open(read_data=data), create=True):
-            self.assertEqual(cps.SingleFilePrompts(''), {})
+            self.prompts.load_prompts()
+            self.assertEqual(self.prompts, {})
+
+
+class MultiFilePromptsTest(unittest.TestCase):
 
     @mk.patch('voxforge2sphinx.corpus.Corpus.track_files', return_value=['/home/user/test.txt'])
     @mk.patch('voxforge2sphinx.corpus.open', mk.mock_open(read_data="Vou tomar um pouquinho d'água"), create=True)
     def test_multi(self, mock_track_files):
         multi = cps.MultiFilePrompts('/home/user/', 'txt')
+        multi.load_prompts()
         mock_track_files.assert_called_with('/home/user/', 'txt')
         self.assertTrue('test' in multi)
         self.assertEqual(multi['test'], "vou tomar um pouquinho d'água")
