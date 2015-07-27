@@ -39,6 +39,10 @@ info_pattern = '|'.join('(?P<%s>%s)' % pair for pair in info_attributes)
 info_regex = re.compile(info_pattern)
 
 
+def track_files(file_path, file_format):
+    return glob.glob('{}/*.{}'.format(file_path, file_format)).sort()
+
+
 class Corpus:
     """Handle the organization and compilation of the speech corpus."""
 
@@ -59,10 +63,6 @@ class Corpus:
         self.base_path = target_path
         self.corpus_path = path.join(self.base_path, self.name)
         self.audio_format = audio_fmt
-
-    @staticmethod
-    def track_files(file_path, file_format):
-        return glob.glob('{}/*.{}'.format(file_path, file_format)).sort()
 
     @staticmethod
     def format_speaker_id(spk_id):
@@ -196,14 +196,19 @@ class Speaker:
         self.trans = Prompts.create_prompts(*path_list, multi_path=self.src)
 
     def gather_audios(self, audio_format='wav'):
-        audios_files = Corpus.track_files(path.join(self.src, self.audio_path), audio_format)
+        audios_files = track_files(path.join(self.src, self.audio_path), audio_format)
         for file_path in audios_files:
             yield path.splitext(path.basename(file_path))[0], file_path
 
 
+class Metadata(UserDict):
+    # TODO implement this class
+    pass
+
+
 class Prompts(UserDict):
 
-    def load_prompts(self):
+    def populate(self):
         raise NotImplementedError
 
     @staticmethod
@@ -227,7 +232,7 @@ class SingleFilePrompts(Prompts):
         super().__init__()
         self.file_path = file_path
 
-    def load_prompts(self):
+    def populate(self):
         with open(self.file_path, mode='r', encoding='utf-8') as f:
             for line in f.readlines():
                 m = re.search(SingleFilePrompts.PROMPT_PATTERN, line)
@@ -242,9 +247,22 @@ class MultiFilePrompts(Prompts):
         self.file_path = file_path
         self.ext = ext
 
-    def load_prompts(self):
-        for trans_file in Corpus.track_files(self.file_path, self.ext):
+    def populate(self):
+        for trans_file in track_files(self.file_path, self.ext):
             with open(trans_file, mode='r', encoding='utf-8') as f:
                 first_line = f.readline()
                 if first_line.strip():
                     self.data[path.splitext(path.basename(trans_file))[0]] = first_line.lower()
+
+
+class Audios(UserList):
+
+    def __init__(self, audios_path, audio_format='wav'):
+        super().__init__()
+        self.path = audios_path
+        self.format = audio_format
+
+    def populate(self):
+        audios_files = track_files(self.path, self.format)
+        for file_path in audios_files:
+            self.data.append((path.splitext(path.basename(file_path))[0], file_path))
