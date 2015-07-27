@@ -29,15 +29,6 @@ import re
 import sys
 from collections import UserDict, UserList
 
-info_attributes = [
-    ('USERNAME', r'(?<=User Name:).*(?=\n)'),
-    ('GENDER', r'(?<=Gender:).*(?=\n)'),
-    ('AGE', r'(?<=Age Range:).*(?=\n)'),
-    ('LANGUAGE', r'(?<=Language:).*(?=\n)')
-]
-info_pattern = '|'.join('(?P<%s>%s)' % pair for pair in info_attributes)
-info_regex = re.compile(info_pattern)
-
 
 def track_files(file_path, file_format):
     return glob.glob('{}/*.{}'.format(file_path, file_format)).sort()
@@ -180,14 +171,14 @@ class Speaker:
         self.metadata_path = path.join(self.src, metadata_path)
         self.trans = None
 
-    def gather_metadata(self, file='README', regex=info_regex):
-        file_path = path.join(self.src, self.metadata_path, file)
-        with open(file_path, mode='r', encoding='utf-8') as f:
-            content_file = f.read()
-        try:
-            return {m.lastgroup: m.group(m.lastgroup) for m in regex.finditer(content_file)}
-        except AttributeError as e:
-            print('Invalid regular expression object: {}'.format(e))
+    # def gather_metadata(self, file='README', regex=SpeakerMetadata.REGEX):
+    #     file_path = path.join(self.src, self.metadata_path, file)
+    #     with open(file_path, mode='r', encoding='utf-8') as f:
+    #         content_file = f.read()
+    #     try:
+    #         return {m.lastgroup: m.group(m.lastgroup) for m in regex.finditer(content_file)}
+    #     except AttributeError as e:
+    #         print('Invalid regular expression object: {}'.format(e))
 
     def gather_transcription(self, **kwargs):
         sub_folder = path.join(self.metadata_path, 'prompts-original')
@@ -199,11 +190,6 @@ class Speaker:
         audios_files = track_files(path.join(self.src, self.audio_path), audio_format)
         for file_path in audios_files:
             yield path.splitext(path.basename(file_path))[0], file_path
-
-
-class Metadata(UserDict):
-    # TODO implement this class
-    pass
 
 
 class Prompts(UserDict):
@@ -266,3 +252,26 @@ class Audios(UserList):
         audios_files = track_files(self.path, self.format)
         for file_path in audios_files:
             self.data.append((path.splitext(path.basename(file_path))[0], file_path))
+
+
+class Metadata(UserDict):
+
+    DATA_PATTERNS = [
+        ('USERNAME', r'(?<=User Name:).*(?=\n)'),
+        ('GENDER', r'(?<=Gender:).*(?=\n)'),
+        ('AGE', r'(?<=Age Range:).*(?=\n)'),
+        ('LANGUAGE', r'(?<=Language:).*(?=\n)')
+    ]
+    GLOBAL_PATTERN = '|'.join('(?P<%s>%s)' % pair for pair in DATA_PATTERNS)
+    REGEX = re.compile(GLOBAL_PATTERN)
+
+    def __init__(self, file_path, regex=REGEX):
+        super().__init__()
+        self.path = file_path
+        self.re = regex
+
+    def populate(self):
+        with open(self.path, mode='r', encoding='utf-8') as f:
+            content_file = f.read()
+            for m in self.re.finditer(content_file):
+                self.data[m.lastgroup] = m.group(m.lastgroup).strip()
