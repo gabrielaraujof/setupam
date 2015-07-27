@@ -80,9 +80,9 @@ class Corpus:
         self.create_folder(Corpus.AUDIO_DIR)
         self.create_folder(Corpus.METADATA_DIR)
         trans_filename = self.format_filename(Corpus.TRANSC_EXT)
-        self.trans_file = TranscriptionFile(path.join(self.corpus_path, Corpus.METADATA_DIR, trans_filename))
+        self.trans_file = TranscriptionWriter(path.join(self.corpus_path, Corpus.METADATA_DIR, trans_filename))
         fileid_filename = self.format_filename(Corpus.FILEID_EXT)
-        self.fileid_file = FileidFile(path.join(self.corpus_path, Corpus.METADATA_DIR, fileid_filename))
+        self.fileid_file = FileidWriter(path.join(self.corpus_path, Corpus.METADATA_DIR, fileid_filename))
 
     def add_speaker(self, speaker):
         assert isinstance(speaker, Speaker)
@@ -129,11 +129,51 @@ class Corpus:
         return full_path
 
 
-class Speaker:
-    """Handle the tasks strictly related to speakers entities."""
+class FileWriter:
 
+    def __init__(self, file_path):
+        self.file = file_path
+        self.content = []
+
+    @classmethod
+    def format_content(cls, args):
+        return cls.FORMAT.format(*args)
+
+    def add_content(self, *args):
+        formatted_content = self.format_content(args)
+        self.content.append(formatted_content)
+
+    def store(self):
+        with open(self.file, mode='a', encoding='iso-8859-1') as file:
+            for line in self.content:
+                file.write(line + '\n')
+
+
+class TranscriptionWriter(FileWriter):
+
+    FORMAT = '<s> {0} </s> ({1})'
+    trans_regex = re.compile('\S*[,.?!]+\S*')
+
+    def __init__(self, target_file):
+        super().__init__(target_file)
+
+    def add_content(self, *args):
+        filtered_trans = TranscriptionWriter.trans_regex.sub(' ', args[0])
+        super().add_content(filtered_trans, *args[1:])
+
+
+class FileidWriter(FileWriter):
+
+    FORMAT = '{0}/{1}'
+
+    def __init__(self, target_file):
+        super().__init__(target_file)
+
+
+class Speaker:
+    """Handle the tasks strictly related to speakers entities.
+    """
     def __init__(self, source_path, audio_path='wav', metadata_path='etc'):
-        assert path.exists(source_path)
         self.src = source_path
         self.name = path.basename(self.src)
         self.audio_path = audio_path
@@ -208,44 +248,3 @@ class MultiFilePrompts(Prompts):
                 first_line = f.readline()
                 if first_line.strip():
                     self.data[path.splitext(path.basename(trans_file))[0]] = first_line.lower()
-
-
-class FileWriter:
-
-    def __init__(self, file_path):
-        self.file = file_path
-        self.content = []
-
-    @classmethod
-    def format_content(cls, args):
-        return cls.FORMAT.format(*args)
-
-    def add_content(self, *args):
-        formatted_content = self.format_content(args)
-        self.content.append(formatted_content)
-
-    def store(self):
-        with open(self.file, mode='a', encoding='iso-8859-1') as file:
-            for line in self.content:
-                file.write(line + '\n')
-
-
-class TranscriptionFile(FileWriter):
-
-    FORMAT = '<s> {0} </s> ({1})'
-    trans_regex = re.compile('\S*[,.?!]+\S*')
-
-    def __init__(self, target_file):
-        super().__init__(target_file)
-
-    def add_content(self, *args):
-        filtered_trans = TranscriptionFile.trans_regex.sub(' ', args[0])
-        super().add_content(filtered_trans, *args[1:])
-
-
-class FileidFile(FileWriter):
-
-    FORMAT = '{0}/{1}'
-
-    def __init__(self, target_file):
-        super().__init__(target_file)
