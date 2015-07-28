@@ -250,13 +250,13 @@ class PromptsTest(unittest.TestCase):
         with self.assertRaises(KeyError):
             cps.Prompts.create_prompts('')
 
-        with mk.patch('voxforge2sphinx.corpus.path.exists', return_value=True):
+        with mk.patch('voxforge2sphinx.corpus.os.path.exists', return_value=True):
             cps.Prompts.create_prompts('', multi_path='', ext='')
             mock_single_prompts.assert_called_with('')
             mock_multi_prompts.assert_has_calls([])
             mock_single_prompts.reset_mock()
 
-        with mk.patch('voxforge2sphinx.corpus.path.exists', return_value=False):
+        with mk.patch('voxforge2sphinx.corpus.os.path.exists', return_value=False):
             cps.Prompts.create_prompts('', multi_path='')
             mock_multi_prompts.assert_called_with('', 'txt')
             mock_single_prompts.assert_has_calls([])
