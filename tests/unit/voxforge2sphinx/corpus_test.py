@@ -306,7 +306,7 @@ class AudiosTest(unittest.TestCase):
             self.audios.populate()
             self.assertEqual(
                 tuple(self.audios),
-                (('001', '/home/001.wav'), ('audio', '/home/audio.raw'), ('file', 'file.mp3')))
+                (('001', 'wav', '/home/001.wav'), ('audio', 'raw', '/home/audio.raw'), ('file', 'mp3', 'file.mp3')))
 
 class MetadataTest(unittest.TestCase):
 
