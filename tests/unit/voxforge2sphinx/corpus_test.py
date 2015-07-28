@@ -77,15 +77,15 @@ class SpkBuilderAudiosTest(unittest.TestCase):
     def test_source_no_args(self, mock_glob, mock_audios):
         self.builder.relative_path = '/home'
         self.builder.set_audios()
-        calls = [mk.call('/home', 'wav'), mk.call().populate()]
+        calls = [mk.call(path.join('/home', 'wav'), 'wav'), mk.call().populate()]
         mock_audios.assert_has_calls(calls)
 
     @mk.patch('voxforge2sphinx.corpus.Audios')
     @mk.patch('voxforge2sphinx.corpus.glob.glob', return_value=[''])
     def test_source_only_path(self, mock_glob, mock_audios):
         self.builder.relative_path = '/home'
-        self.builder.set_audios('wav')
-        calls = [mk.call(path.join('/home', 'wav'), 'wav'), mk.call().populate()]
+        self.builder.set_audios('test')
+        calls = [mk.call(path.join('/home', 'test'), 'wav'), mk.call().populate()]
         mock_audios.assert_has_calls(calls)
 
     @mk.patch('voxforge2sphinx.corpus.Audios')
@@ -93,15 +93,15 @@ class SpkBuilderAudiosTest(unittest.TestCase):
     def test_source_only_format(self, mock_glob, mock_audios):
         self.builder.relative_path = '/home'
         self.builder.set_audios(audio_format='raw')
-        calls = [mk.call('/home', 'raw'), mk.call().populate()]
+        calls = [mk.call(path.join('/home', 'wav'), 'raw'), mk.call().populate()]
         mock_audios.assert_has_calls(calls)
 
     @mk.patch('voxforge2sphinx.corpus.Audios')
     @mk.patch('voxforge2sphinx.corpus.glob.glob', side_effect=glob_side_effect())
     def test_source_both(self, mock_glob, mock_audios):
         self.builder.relative_path = '/home'
-        self.builder.set_audios('wav', audio_format='raw')
-        calls = [mk.call(path.join('/home'), 'raw'), mk.call().populate()]
+        self.builder.set_audios('sub', 'test', audio_format='raw')
+        calls = [mk.call(path.join('/home', 'test'), 'raw'), mk.call().populate()]
         mock_audios.assert_has_calls(calls)
 
 
