@@ -183,29 +183,28 @@ class FileWriterTest(unittest.TestCase):
 
 
 class PromptsTest(unittest.TestCase):
-    @mk.patch('voxforge2sphinx.corpus.track_files', return_value=['t.txt'])
-    def test_prompts(self, mock_track_files):
+
+    @mk.patch('voxforge2sphinx.corpus.MultiFilePrompts')
+    @mk.patch('voxforge2sphinx.corpus.SingleFilePrompts')
+    def test_prompts(self, mock_single_prompts, mock_multi_prompts):
         with self.assertRaises(NotImplementedError):
-            prompts = cps.Prompts()
-            prompts.populate()
-        with self.assertRaisesRegex(TypeError, 'Missing positional argument'):
+            cps.Prompts().populate()
+        with self.assertRaises(KeyError):
             cps.Prompts.create_prompts()
-        with self.assertRaisesRegex(TypeError, 'Missing.*"multi_path"'):
+        with self.assertRaises(KeyError):
             cps.Prompts.create_prompts('')
 
-        with mk.patch('voxforge2sphinx.corpus.open', mk.mock_open(read_data='\n'), create=True):
-            with mk.patch('voxforge2sphinx.corpus.path.exists', return_value=False):
-                multi_prompt = cps.Prompts.create_prompts('', multi_path='')
-                self.assertIsInstance(multi_prompt, cps.MultiFilePrompts)
-                multi_prompt.populate()
-                self.assertEqual(len(multi_prompt), 0)
+        with mk.patch('voxforge2sphinx.corpus.path.exists', return_value=True):
+            cps.Prompts.create_prompts('', multi_path='', ext='')
+            mock_single_prompts.assert_called_with('')
+            mock_multi_prompts.assert_has_calls([])
+            mock_single_prompts.reset_mock()
 
-        with mk.patch('voxforge2sphinx.corpus.open', mk.mock_open(), create=True):
-            with mk.patch('voxforge2sphinx.corpus.path.exists', return_value=True):
-                single_prompt = cps.Prompts.create_prompts('', multi_path='')
-                self.assertIsInstance(single_prompt, cps.SingleFilePrompts)
-                single_prompt.populate()
-                self.assertEqual(len(single_prompt), 0)
+        with mk.patch('voxforge2sphinx.corpus.path.exists', return_value=False):
+            cps.Prompts.create_prompts('', multi_path='')
+            mock_multi_prompts.assert_called_with('', 'txt')
+            mock_single_prompts.assert_has_calls([])
+            mock_multi_prompts.reset_mock()
 
 
 class SingleFilePromptsTest(unittest.TestCase):
