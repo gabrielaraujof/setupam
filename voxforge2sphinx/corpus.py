@@ -188,17 +188,22 @@ class SpeakerBuilder:
     def speaker(self):
         return self._speaker
 
-    def set_audios(self, **kwargs):
-        full_path = kwargs.get('audios_path')
+    def set_audios(self, *args, **kwargs):
+        path_list = args
         audio_format = kwargs.get('audio_format', 'wav')
         if self.relative_path:
-            full_path = os.path.join(self.relative_path, full_path) if full_path else self.relative_path
-        if not full_path:
-            raise TypeError("Missing the path of audios' directory.")
+            path_list = [os.path.join(self.relative_path, p) for p in path_list]
+            path_list.append(self.relative_path)
+        if not path_list:
+            raise TypeError("Missing the path list of audios' directory.")
+        for audios_path in path_list:
+            if len(glob.glob(os.path.join(audios_path, '\*.{}'.format(audio_format)))) > 0:
+                audios_list = Audios(audios_path, audio_format)
+                audios_list.populate()
+                self.speaker.audios = audios_list
+                break
         else:
-            audios_list = Audios(full_path, audio_format)
-            audios_list.populate()
-            self.speaker.audios = audios_list
+            raise ValueError('Given an invalid path list given.')
 
     def set_prompts(self, *args, **kwargs):
         single_path_list = args
