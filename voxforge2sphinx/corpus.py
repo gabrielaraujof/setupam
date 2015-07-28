@@ -125,6 +125,8 @@ class Corpus:
 
 class FileWriter:
 
+    FORMAT = '{0}'
+
     def __init__(self, file_path):
         self.file = file_path
         self.content = []
