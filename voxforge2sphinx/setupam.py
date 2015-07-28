@@ -27,8 +27,9 @@ import os
 import glob
 import math
 import random
+import logging
 
-from voxforge2sphinx import speaker, metadata
+import voxforge2sphinx.corpus as cp
 
 
 parser = argparse.ArgumentParser(description='Structure the voxforge speech corpus in the Sphinx-Train template.')
@@ -44,55 +45,59 @@ parser.add_argument(
     '-q', '--quota', default=0.1, type=float,
     help="The percentage (float value) of speakers selected for the tests database. Default=0.1", metavar='Q')
 
-parser.add_argument('-v', '--verbose', help='Print the debug messages.', action="store_true")
+parser.add_argument('--log', default='INFO', help='Print the debug messages.', action="store_true")
 
 args = parser.parse_args()
+model, source, target, db_test_p, log_level = args.model, args.source, args.target, args.quota, args.log
 
-model = args.model
-source = args.source
-target = os.path.join(args.target, model)
-db_test_p = args.quota
+numeric_level = getattr(logging, log_level.upper(), None)
+if not isinstance(numeric_level, int):
+    raise ValueError('Invalid log level: {}'.format(log_level))
+logging.basicConfig(level=numeric_level, format='%(levelname)s: %(message)s')
 
 
-def get_all_dirs(source):
-    '''Get all wav directories.'''
-    return [os.path.split(x)[0] for x in sorted(glob.iglob(os.path.join(source, '*/wav')))]
+def load_spk_content(corpus, spk_path_list):
+    for spk_path in spk_path_list:
+        builder = cp.SpeakerBuilder(next(corpus.SPEAKER_ID), spk_path, os.path.join(corpus.src, spk_path))
+        builder.set_audios()
+        builder.set_prompts()
+        corpus.add_speaker(builder.speaker)
+
 
 if __name__ == '__main__':
-    metadata._verbose = args.verbose
-    speaker._verbose = args.verbose
 
-    # Creating root directories
-    etc_dir = os.path.join(target, 'etc')
-    if not os.path.exists(etc_dir):
-        os.makedirs(etc_dir) # Creating the configuration files' directory.
-    wav_dir = os.path.join(target, 'wav')
-    if not os.path.exists(wav_dir):
-        os.makedirs(wav_dir) # Creating the audios' directory.
-
-    # Path of configuration files
-    train_fileid = os.path.join(etc_dir, '{}_train.fileids'.format(model))
-    train_trans = os.path.join(etc_dir, '{}_train.transcription'.format(model))
-    test_fileid = os.path.join(etc_dir, '{}_test.fileids'.format(model))
-    test_trans = os.path.join(etc_dir, '{}_test.transcription'.format(model))
-
-    # Get all speaker directories to setup.
-    dirs = get_all_dirs(source)
-    nspeakers = len(dirs)
-    print("Found {} speakers' directories.".format(nspeakers))
+    logging.info('Scanning for speaker directories...')
+    os.chdir(source)
+    speakers_dir = [cur_path for cur_path in glob.glob('*') if os.path.isdir(cur_path)]
+    spk_count = len(speakers_dir)
+    logging.info("Found {} possible speaker's directories.".format(spk_count))
 
     # Compute the percentage of the tests base
-    nstest =  math.floor(db_test_p * nspeakers)
-    nstrain = nspeakers - nstest
-    print('Selected {} speakers for the train database, and {} speakers for the tests database.'.format(nstrain,nstest))
+    spk_count_test = math.floor(db_test_p * spk_count)
+    if not spk_count_test:
+        spk_count_test = 1
+    spk_count_train = spk_count - spk_count_test
+    logging.info(
+        'Selected {} for the train database, and {} for the tests database.'.format(spk_count_train, spk_count_test)
+    )
+    random.shuffle(speakers_dir)  # Choose speakers randomly
 
-    random.shuffle(dirs) #choose speakers randomly
+    train_corpus = cp.Corpus(model, 'train', target, src_path=source)
+    logging.info('Setting up the training corpus...')
+    train_corpus.set_up()
 
-    # Iterating over train speakers' directories
-    for speaker_id in range(nstrain):
-        speaker.add(dirs[speaker_id], speaker_id, wav_dir, train_fileid, train_trans)
+    logging.info("Loading speakers' content...")
+    load_spk_content(train_corpus, speakers_dir[:spk_count_train])
+    logging.info('Building train corpus...')
+    train_corpus.compile_corpus()
 
-    # Iterating over tests speakers' directories
-    for speaker_id in range(nstrain, nspeakers):
-        speaker.add(dirs[speaker_id], speaker_id, wav_dir, test_fileid, test_trans)
+    test_corpus = cp.Corpus(model, 'test', target, src_path=source)
+    logging.info('Setting up the test corpus...')
+    test_corpus.set_up()
+    logging.info("Loading speakers' content...")
+    load_spk_content(test_corpus, speakers_dir[-spk_count_test:])
+    logging.info('Building test corpus...')
+    test_corpus.compile_corpus()
+
+    logging.info('Done.')
 
