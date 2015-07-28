@@ -185,11 +185,12 @@ class SpeakerBuilder:
         audio_format = kwargs.get('audio_format', 'wav')
         if self.relative_path:
             full_path = path.join(self.relative_path, full_path) if full_path else self.relative_path
-        if full_path and audio_format:
+        if not full_path:
+            raise TypeError("Missing the path of audios' directory.")
+        else:
             audios_list = Audios(full_path, audio_format)
             audios_list.populate()
             self.speaker.audios = audios_list
-        # TODO else
 
     def set_prompts(self, *args, **kwargs):
         single_path_list = args
@@ -199,11 +200,14 @@ class SpeakerBuilder:
             single_path_list.append(path.join(self.relative_path, 'etc', 'prompts-original'))
             single_path_list.append(path.join(self.relative_path, '{}.txt'.format(self.speaker.name)))
             multi_path = path.join(self.relative_path, multi_path) if multi_path else self.relative_path
-        if single_path_list and multi_path:
+        if not (single_path_list or multi_path):
+            raise TypeError('Missing arguments. Must have at least a path for multi files.')
+        elif not multi_path:
+            prompts = Prompts.create_prompts(*single_path_list)
+        else:
             prompts = Prompts.create_prompts(*single_path_list, multi_path=multi_path)
-            prompts.populate()
-            self.speaker.prompts = prompts
-        # TODO else
+        prompts.populate()
+        self.speaker.prompts = prompts
 
     def set_metadata(self, **kwargs):
         full_path = kwargs.get('path')
@@ -216,8 +220,8 @@ class SpeakerBuilder:
             metadata = Metadata(full_path, kwargs['regex']) if 'regex' in kwargs else Metadata(full_path)
             metadata.populate()
             self.speaker.metadata = metadata
-        # else:
-        #     raise TypeError('Missing the file path.')
+        else:
+            raise TypeError('Missing the file path.')
 
 
 class Prompts(UserDict):
