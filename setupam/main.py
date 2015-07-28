@@ -29,7 +29,7 @@ import math
 import random
 import logging
 
-import voxforge2sphinx.corpus as cp
+import setupam.corpus as cp
 
 
 parser = argparse.ArgumentParser(description='Structure the voxforge speech corpus in the Sphinx-Train template.')

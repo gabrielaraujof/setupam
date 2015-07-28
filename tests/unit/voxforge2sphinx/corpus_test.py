@@ -22,7 +22,7 @@ import unittest
 from unittest import mock as mk
 from os import path
 
-import voxforge2sphinx.corpus as cps
+import setupam.corpus as cps
 
 
 def glob_side_effect():
@@ -31,7 +31,7 @@ def glob_side_effect():
 
 
 class CorpusTest(unittest.TestCase):
-    @mk.patch('voxforge2sphinx.corpus.glob.glob')
+    @mk.patch('setupam.corpus.glob.glob')
     def test_track_files(self, mock_glob):
         cps.track_files('file_path', 'ext')
         mock_glob.assert_called_with(path.join('file_path', '*.ext'))
@@ -54,50 +54,50 @@ class SpkBuilderAudiosTest(unittest.TestCase):
             self.builder.set_audios()
         with self.assertRaisesRegex(TypeError, 'Missing.*path list'):
             self.builder.set_audios(audio_format='')
-        with mk.patch('voxforge2sphinx.corpus.glob.glob', return_value=[]):
+        with mk.patch('setupam.corpus.glob.glob', return_value=[]):
             with self.assertRaisesRegex(ValueError, '.*invalid path list.*'):
                 self.builder.set_audios('x', 'y')
 
-    @mk.patch('voxforge2sphinx.corpus.Audios')
-    @mk.patch('voxforge2sphinx.corpus.glob.glob', side_effect=glob_side_effect())
+    @mk.patch('setupam.corpus.Audios')
+    @mk.patch('setupam.corpus.glob.glob', side_effect=glob_side_effect())
     def test_no_source_only_path(self, mock_glob, mock_audios):
         self.builder.set_audios('/home', '/test')
         calls = [mk.call('/test', 'wav'), mk.call().populate()]
         mock_audios.assert_has_calls(calls)
 
-    @mk.patch('voxforge2sphinx.corpus.Audios')
-    @mk.patch('voxforge2sphinx.corpus.glob.glob', side_effect=glob_side_effect())
+    @mk.patch('setupam.corpus.Audios')
+    @mk.patch('setupam.corpus.glob.glob', side_effect=glob_side_effect())
     def test_no_source_both(self, mock_glob, mock_audios):
         self.builder.set_audios('/home', '/test', audio_format='raw')
         calls = [mk.call('/test', 'raw'), mk.call().populate()]
         mock_audios.assert_has_calls(calls)
 
-    @mk.patch('voxforge2sphinx.corpus.Audios')
-    @mk.patch('voxforge2sphinx.corpus.glob.glob', return_value=[''])
+    @mk.patch('setupam.corpus.Audios')
+    @mk.patch('setupam.corpus.glob.glob', return_value=[''])
     def test_source_no_args(self, mock_glob, mock_audios):
         self.builder.relative_path = '/home'
         self.builder.set_audios()
         calls = [mk.call(path.join('/home', 'wav'), 'wav'), mk.call().populate()]
         mock_audios.assert_has_calls(calls)
 
-    @mk.patch('voxforge2sphinx.corpus.Audios')
-    @mk.patch('voxforge2sphinx.corpus.glob.glob', return_value=[''])
+    @mk.patch('setupam.corpus.Audios')
+    @mk.patch('setupam.corpus.glob.glob', return_value=[''])
     def test_source_only_path(self, mock_glob, mock_audios):
         self.builder.relative_path = '/home'
         self.builder.set_audios('test')
         calls = [mk.call(path.join('/home', 'test'), 'wav'), mk.call().populate()]
         mock_audios.assert_has_calls(calls)
 
-    @mk.patch('voxforge2sphinx.corpus.Audios')
-    @mk.patch('voxforge2sphinx.corpus.glob.glob', return_value=[''])
+    @mk.patch('setupam.corpus.Audios')
+    @mk.patch('setupam.corpus.glob.glob', return_value=[''])
     def test_source_only_format(self, mock_glob, mock_audios):
         self.builder.relative_path = '/home'
         self.builder.set_audios(audio_format='raw')
         calls = [mk.call(path.join('/home', 'wav'), 'raw'), mk.call().populate()]
         mock_audios.assert_has_calls(calls)
 
-    @mk.patch('voxforge2sphinx.corpus.Audios')
-    @mk.patch('voxforge2sphinx.corpus.glob.glob', side_effect=glob_side_effect())
+    @mk.patch('setupam.corpus.Audios')
+    @mk.patch('setupam.corpus.glob.glob', side_effect=glob_side_effect())
     def test_source_both(self, mock_glob, mock_audios):
         self.builder.relative_path = '/home'
         self.builder.set_audios('sub', 'test', audio_format='raw')
@@ -114,7 +114,7 @@ class SpkBuilderPromptsTest(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, 'Missing arguments.*'):
             self.builder.set_prompts()
 
-    @mk.patch('voxforge2sphinx.corpus.Prompts.create_prompts')
+    @mk.patch('setupam.corpus.Prompts.create_prompts')
     def test_no_source_only_one(self, mock_prompts):
         self.builder.set_prompts('file1', 'file2')
         calls = [mk.call('file1', 'file2'), mk.call().populate()]
@@ -124,13 +124,13 @@ class SpkBuilderPromptsTest(unittest.TestCase):
         calls = [mk.call(multi_path='folder'), mk.call().populate()]
         mock_prompts.assert_has_calls(calls)
 
-    @mk.patch('voxforge2sphinx.corpus.Prompts.create_prompts')
+    @mk.patch('setupam.corpus.Prompts.create_prompts')
     def test_no_source_both(self, mock_prompts):
         self.builder.set_prompts('file1', 'file2', multi='folder')
         calls = [mk.call('file1', 'file2', multi_path='folder'), mk.call().populate()]
         mock_prompts.assert_has_calls(calls)
 
-    @mk.patch('voxforge2sphinx.corpus.Prompts.create_prompts')
+    @mk.patch('setupam.corpus.Prompts.create_prompts')
     def test_source_no_args(self, mock_prompts):
         self.builder.relative_path = '/home'
         self.builder.set_prompts()
@@ -138,7 +138,7 @@ class SpkBuilderPromptsTest(unittest.TestCase):
         calls = [mk.call(*paths, multi_path='/home'), mk.call().populate()]
         mock_prompts.assert_has_calls(calls)
 
-    @mk.patch('voxforge2sphinx.corpus.Prompts.create_prompts')
+    @mk.patch('setupam.corpus.Prompts.create_prompts')
     def test_source_only_path(self, mock_prompts):
         self.builder.relative_path = '/home'
         self.builder.set_prompts('file1', 'file2')
@@ -147,7 +147,7 @@ class SpkBuilderPromptsTest(unittest.TestCase):
         calls = [mk.call(*paths, multi_path='/home'), mk.call().populate()]
         mock_prompts.assert_has_calls(calls)
 
-    @mk.patch('voxforge2sphinx.corpus.Prompts.create_prompts')
+    @mk.patch('setupam.corpus.Prompts.create_prompts')
     def test_source_only_multi(self, mock_prompts):
         self.builder.relative_path = '/home'
         self.builder.set_prompts(multi='folder')
@@ -155,7 +155,7 @@ class SpkBuilderPromptsTest(unittest.TestCase):
         calls = [mk.call(*paths, multi_path=path.join('/home', 'folder')), mk.call().populate()]
         mock_prompts.assert_has_calls(calls)
 
-    @mk.patch('voxforge2sphinx.corpus.Prompts.create_prompts')
+    @mk.patch('setupam.corpus.Prompts.create_prompts')
     def test_source_both(self, mock_prompts):
         self.builder.relative_path = '/home'
         self.builder.set_prompts('file1', multi='folder')
@@ -176,7 +176,7 @@ class SpkBuilderMetadataTest(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, 'Missing.*path'):
             self.builder.set_metadata(regex='')
 
-    @mk.patch('voxforge2sphinx.corpus.Metadata.populate')
+    @mk.patch('setupam.corpus.Metadata.populate')
     def test_no_source_only_path(self, mock_populate):
         self.builder.set_metadata(path='test_path')
         self.assertEqual(self.builder.speaker.metadata, {})
@@ -184,7 +184,7 @@ class SpkBuilderMetadataTest(unittest.TestCase):
         self.assertEqual(self.builder.speaker.metadata.re, cps.Metadata.REGEX)
         mock_populate.assert_called()
 
-    @mk.patch('voxforge2sphinx.corpus.Metadata.populate')
+    @mk.patch('setupam.corpus.Metadata.populate')
     def test_no_source_both(self, mock_populate):
         self.builder.set_metadata(path='test_path', regex='test')
         self.assertEqual(self.builder.speaker.metadata, {})
@@ -192,7 +192,7 @@ class SpkBuilderMetadataTest(unittest.TestCase):
         self.assertEqual(self.builder.speaker.metadata.re, 'test')
         mock_populate.assert_called()
 
-    @mk.patch('voxforge2sphinx.corpus.Metadata.populate')
+    @mk.patch('setupam.corpus.Metadata.populate')
     def test_source_no_args(self, mock_populate):
         self.builder.relative_path = '/home'
         self.builder.set_metadata()
@@ -201,7 +201,7 @@ class SpkBuilderMetadataTest(unittest.TestCase):
         self.assertEqual(self.builder.speaker.metadata.re, cps.Metadata.REGEX)
         mock_populate.assert_called()
 
-    @mk.patch('voxforge2sphinx.corpus.Metadata.populate')
+    @mk.patch('setupam.corpus.Metadata.populate')
     def test_source_only_regex(self, mock_populate):
         self.builder.relative_path = '/home'
         self.builder.set_metadata(regex='re_test')
@@ -210,7 +210,7 @@ class SpkBuilderMetadataTest(unittest.TestCase):
         self.assertEqual(self.builder.speaker.metadata.re, 're_test')
         mock_populate.assert_called()
 
-    @mk.patch('voxforge2sphinx.corpus.Metadata.populate')
+    @mk.patch('setupam.corpus.Metadata.populate')
     def test_source_only_path(self, mock_populate):
         self.builder.relative_path = '/home'
         self.builder.set_metadata(path='test_path')
@@ -219,7 +219,7 @@ class SpkBuilderMetadataTest(unittest.TestCase):
         self.assertEqual(self.builder.speaker.metadata.re, cps.Metadata.REGEX)
         mock_populate.assert_called()
 
-    @mk.patch('voxforge2sphinx.corpus.Metadata.populate')
+    @mk.patch('setupam.corpus.Metadata.populate')
     def test_source_both(self, mock_populate):
         self.builder.relative_path = '/home'
         self.builder.set_metadata(path='test_path', regex='test')
@@ -237,7 +237,7 @@ class FileWriterTest(unittest.TestCase):
         text = 'Texto'
         file_w.content.append(text)
         mock_open = mk.mock_open()
-        with mk.patch('voxforge2sphinx.corpus.open', mock_open, create=True):
+        with mk.patch('setupam.corpus.open', mock_open, create=True):
             file_w.store()
         handle = mock_open()
         handle.write.assert_called_with(text + '\n')
@@ -254,8 +254,8 @@ class FileWriterTest(unittest.TestCase):
 
 class PromptsTest(unittest.TestCase):
 
-    @mk.patch('voxforge2sphinx.corpus.MultiFilePrompts')
-    @mk.patch('voxforge2sphinx.corpus.SingleFilePrompts')
+    @mk.patch('setupam.corpus.MultiFilePrompts')
+    @mk.patch('setupam.corpus.SingleFilePrompts')
     def test_prompts(self, mock_single_prompts, mock_multi_prompts):
         with self.assertRaises(NotImplementedError):
             cps.Prompts().populate()
@@ -264,13 +264,13 @@ class PromptsTest(unittest.TestCase):
         with self.assertRaises(KeyError):
             cps.Prompts.create_prompts('')
 
-        with mk.patch('voxforge2sphinx.corpus.os.path.exists', return_value=True):
+        with mk.patch('setupam.corpus.os.path.exists', return_value=True):
             cps.Prompts.create_prompts('', multi_path='', ext='')
             mock_single_prompts.assert_called_with('')
             mock_multi_prompts.assert_has_calls([])
             mock_single_prompts.reset_mock()
 
-        with mk.patch('voxforge2sphinx.corpus.os.path.exists', return_value=False):
+        with mk.patch('setupam.corpus.os.path.exists', return_value=False):
             cps.Prompts.create_prompts('', multi_path='')
             mock_multi_prompts.assert_called_with('', 'txt')
             mock_single_prompts.assert_has_calls([])
@@ -287,20 +287,20 @@ class SingleFilePromptsTest(unittest.TestCase):
         exp_dict = {'094': "vou tomar um pouquinho d'água.", '095': 'para onde a senhora quer ir?',
                     '096': 'que horas são?', '097': 'amanhã é sexta.', '16': 'para onde a senhora quer ir?'}
 
-        with mk.patch('voxforge2sphinx.corpus.open', mk.mock_open(read_data=data), create=True):
+        with mk.patch('setupam.corpus.open', mk.mock_open(read_data=data), create=True):
             self.prompts.populate()
             self.assertEqual(self.prompts, exp_dict)
 
     def test_invalid_single(self):
         data = "094   \nPara onde a senhora quer ir?\n096Que horas são?\n\n"
-        with mk.patch('voxforge2sphinx.corpus.open', mk.mock_open(read_data=data), create=True):
+        with mk.patch('setupam.corpus.open', mk.mock_open(read_data=data), create=True):
             self.prompts.populate()
             self.assertEqual(self.prompts, {})
 
 
 class MultiFilePromptsTest(unittest.TestCase):
-    @mk.patch('voxforge2sphinx.corpus.track_files', return_value=['/home/user/test.txt'])
-    @mk.patch('voxforge2sphinx.corpus.open', mk.mock_open(read_data="Vou tomar um pouquinho d'água"), create=True)
+    @mk.patch('setupam.corpus.track_files', return_value=['/home/user/test.txt'])
+    @mk.patch('setupam.corpus.open', mk.mock_open(read_data="Vou tomar um pouquinho d'água"), create=True)
     def test_multi(self, mock_track_files):
         multi = cps.MultiFilePrompts('/home/user/', 'txt')
         multi.populate()
@@ -316,7 +316,7 @@ class AudiosTest(unittest.TestCase):
 
     def test_populate(self):
         return_list = ('/home/001.wav', '/home/audio.raw', 'file.mp3')
-        with mk.patch('voxforge2sphinx.corpus.track_files', return_value=return_list):
+        with mk.patch('setupam.corpus.track_files', return_value=return_list):
             self.audios.populate()
             self.assertEqual(
                 tuple(self.audios),
@@ -344,7 +344,7 @@ class MetadataTest(unittest.TestCase):
             'AGE': 'desconhecido',
             'LANGUAGE': 'PT_BR'
         }
-        with mk.patch('voxforge2sphinx.corpus.open', mk.mock_open(read_data=content_file), create=True):
+        with mk.patch('setupam.corpus.open', mk.mock_open(read_data=content_file), create=True):
             self.metadata.populate()
             self.assertEqual(self.metadata, exp_dict)
 
