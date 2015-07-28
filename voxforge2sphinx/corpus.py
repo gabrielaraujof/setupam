@@ -106,6 +106,10 @@ class Corpus:
             print('I/O error(%s): %s %s' % (e.errno, e.strerror, e.filename))
             sys.exit(1)
 
+    def _store_files(self):
+        self.trans_file.store()
+        self.fileid_file.store()
+
     def compile_corpus(self):
         for spk in self.speakers:
             spk_repr = str(spk)
@@ -116,10 +120,7 @@ class Corpus:
                     self._process_audio(
                         audio_path, target_path, audio_repr, audio_ext, spk.prompts[audio_name], spk_repr
                     )
-
-    def store_files(self):
-        self.trans_file.store()
-        self.fileid_file.store()
+        self._store_files()
 
 
 class FileWriter:
