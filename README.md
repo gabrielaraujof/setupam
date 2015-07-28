@@ -1,4 +1,4 @@
-SetupAM [![Build Status](https://travis-ci.org/gabrielaraujof/voxforge2sphinxPtBr.svg?branch=major-update)](https://travis-ci.org/gabrielaraujof/voxforge2sphinxPtBr)
+SetupAM [![Build Status](https://travis-ci.org/gabrielaraujof/setupam.svg)](https://travis-ci.org/gabrielaraujof/setupam)
 ===================
 
 A command-line tool to setup a speech corpus for training an acoustic model for CMU Sphinx.
