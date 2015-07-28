@@ -31,7 +31,7 @@ import collections
 
 
 def track_files(file_path, file_format):
-    return glob.glob('{}/*.{}'.format(file_path, file_format)).sort()
+    return glob.glob('{}/*.{}'.format(file_path, file_format))
 
 
 def id_generator():
@@ -76,7 +76,8 @@ class Corpus:
 
     def create_folder(self, folder_path, absolute=False):
         full_path = folder_path if absolute else os.path.join(self.corpus_path, folder_path)
-        os.makedirs(full_path)
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
         return full_path
 
     @staticmethod
@@ -198,7 +199,7 @@ class SpeakerBuilder:
         if not path_list:
             raise TypeError("Missing the path list of audios' directory.")
         for audios_path in path_list:
-            if len(glob.glob(os.path.join(audios_path, '\*.{}'.format(audio_format)))) > 0:
+            if len(glob.glob(os.path.join(audios_path, '*.{}'.format(audio_format)))) > 0:
                 audios_list = Audios(audios_path, audio_format)
                 audios_list.populate()
                 self.speaker.audios = audios_list
@@ -278,7 +279,7 @@ class MultiFilePrompts(Prompts):
     def populate(self):
         for trans_file in track_files(self.file_path, self.ext):
             with open(trans_file, mode='r', encoding='utf-8') as f:
-                first_line = f.readline()
+                first_line = f.readline().strip()
                 if first_line.strip():
                     self.data[os.path.splitext(os.path.basename(trans_file))[0]] = first_line.lower()
 
