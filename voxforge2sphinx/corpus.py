@@ -22,12 +22,12 @@ __license__ = "GPL"
 __version__ = "0.1"
 __maintainer__ = "Gabriel Araujo"
 
-from os import path, makedirs
+import os
 import glob
-from shutil import copy2
+import shutil
 import re
 import sys
-from collections import UserDict, UserList
+import collections
 
 
 def track_files(file_path, file_format):
@@ -64,19 +64,19 @@ class Corpus:
 
     @property
     def corpus_path(self):
-        return path.join(self.target_path, self.name)
+        return os.path.join(self.target_path, self.name)
 
     def set_up(self):
         self.create_folder(Corpus.AUDIO_DIR)
         self.create_folder(Corpus.METADATA_DIR)
         trans_filename = self.format_filename(Corpus.TRANSCRIPT_EXT)
-        self.trans_file = TranscriptionWriter(path.join(self.corpus_path, Corpus.METADATA_DIR, trans_filename))
+        self.trans_file = TranscriptionWriter(os.path.join(self.corpus_path, Corpus.METADATA_DIR, trans_filename))
         fileid_filename = self.format_filename(Corpus.FILEID_EXT)
-        self.fileid_file = FileidWriter(path.join(self.corpus_path, Corpus.METADATA_DIR, fileid_filename))
+        self.fileid_file = FileidWriter(os.path.join(self.corpus_path, Corpus.METADATA_DIR, fileid_filename))
 
     def create_folder(self, folder_path, absolute=False):
-        full_path = folder_path if absolute else path.join(self.corpus_path, folder_path)
-        makedirs(full_path)
+        full_path = folder_path if absolute else os.path.join(self.corpus_path, folder_path)
+        os.makedirs(full_path)
         return full_path
 
     @staticmethod
@@ -96,8 +96,8 @@ class Corpus:
     def _process_audio(self, original_path, target_path, audio_repr, audio_ext, prompt, speaker_repr):
         try:
             # Copy audio file
-            new_path = path.join(target_path, '{}.{}'.format(audio_repr, audio_ext))
-            copy2(original_path, new_path)
+            new_path = os.path.join(target_path, '{}.{}'.format(audio_repr, audio_ext))
+            shutil.copy2(original_path, new_path)
             # Include transcription
             self.trans_file.add_content(prompt, audio_repr)
             # Include file_id
@@ -109,7 +109,7 @@ class Corpus:
     def compile_corpus(self):
         for spk in self.speakers:
             spk_repr = str(spk)
-            target_path = self.create_folder(path.join(Corpus.AUDIO_DIR, spk_repr))
+            target_path = self.create_folder(os.path.join(Corpus.AUDIO_DIR, spk_repr))
             for audio_name, audio_ext, audio_path in spk.audios:
                 if audio_name in spk.prompts:  # Has transcription?
                     audio_repr = Corpus.format_audio_id(spk_repr, next(Corpus.AUDIO_ID))
@@ -189,7 +189,7 @@ class SpeakerBuilder:
         full_path = kwargs.get('audios_path')
         audio_format = kwargs.get('audio_format', 'wav')
         if self.relative_path:
-            full_path = path.join(self.relative_path, full_path) if full_path else self.relative_path
+            full_path = os.path.join(self.relative_path, full_path) if full_path else self.relative_path
         if not full_path:
             raise TypeError("Missing the path of audios' directory.")
         else:
@@ -201,10 +201,10 @@ class SpeakerBuilder:
         single_path_list = args
         multi_path = kwargs.get('multi')
         if self.relative_path:
-            single_path_list = [path.join(self.relative_path, p) for p in single_path_list]
-            single_path_list.append(path.join(self.relative_path, 'etc', 'prompts-original'))
-            single_path_list.append(path.join(self.relative_path, '{}.txt'.format(self.speaker.name)))
-            multi_path = path.join(self.relative_path, multi_path) if multi_path else self.relative_path
+            single_path_list = [os.path.join(self.relative_path, p) for p in single_path_list]
+            single_path_list.append(os.path.join(self.relative_path, 'etc', 'prompts-original'))
+            single_path_list.append(os.path.join(self.relative_path, '{}.txt'.format(self.speaker.name)))
+            multi_path = os.path.join(self.relative_path, multi_path) if multi_path else self.relative_path
         if not (single_path_list or multi_path):
             raise TypeError('Missing arguments. Must have at least a path for multi files.')
         elif not multi_path:
@@ -218,9 +218,9 @@ class SpeakerBuilder:
         full_path = kwargs.get('path')
         if self.relative_path:
             if full_path:
-                full_path = path.join(self.relative_path, full_path)
+                full_path = os.path.join(self.relative_path, full_path)
             else:
-                full_path = path.join(self.relative_path, 'etc', 'README')
+                full_path = os.path.join(self.relative_path, 'etc', 'README')
         if full_path:
             metadata = Metadata(full_path, kwargs['regex']) if 'regex' in kwargs else Metadata(full_path)
             metadata.populate()
@@ -229,7 +229,7 @@ class SpeakerBuilder:
             raise TypeError('Missing the file path.')
 
 
-class Prompts(UserDict):
+class Prompts(collections.UserDict):
 
     def populate(self):
         raise NotImplementedError
@@ -237,7 +237,7 @@ class Prompts(UserDict):
     @staticmethod
     def create_prompts(*args, **kwargs):
         for file_path in args:
-            if path.exists(file_path):
+            if os.path.exists(file_path):
                 return SingleFilePrompts(file_path)
         else:
             return MultiFilePrompts(kwargs['multi_path'], kwargs.get('ext', 'txt'))
@@ -271,10 +271,10 @@ class MultiFilePrompts(Prompts):
             with open(trans_file, mode='r', encoding='utf-8') as f:
                 first_line = f.readline()
                 if first_line.strip():
-                    self.data[path.splitext(path.basename(trans_file))[0]] = first_line.lower()
+                    self.data[os.path.splitext(os.path.basename(trans_file))[0]] = first_line.lower()
 
 
-class Audios(UserList):
+class Audios(collections.UserList):
 
     def __init__(self, audios_path, audio_format):
         super().__init__()
@@ -284,11 +284,11 @@ class Audios(UserList):
     def populate(self):
         audios_files = track_files(self.path, self.format)
         for file_path in audios_files:
-            filename, file_extension = path.splitext(path.basename(file_path))
+            filename, file_extension = os.path.splitext(os.path.basename(file_path))
             self.data.append((filename, file_extension[1:], file_path))
 
 
-class Metadata(UserDict):
+class Metadata(collections.UserDict):
 
     DATA_PATTERNS = [
         ('USERNAME', r'(?<=User Name:).*(?=\n)'),
