@@ -5,6 +5,11 @@ __pycache__/
 # C extensions
 *.so
 
+# Intellij
+.idea/
+*.iml
+*.iws
+
 # Distribution / packaging
 .Python
 env/
@@ -26,7 +31,7 @@ var/
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
+# Unit tests / coverage reports
 htmlcov/
 .tox/
 .coverage
