@@ -39,6 +39,58 @@ class SpeakerTest(unittest.TestCase):
         self.speaker = cps.Speaker(self._id, self.src_path)
 
 
+class SpkBuilderAudiosTest(unittest.TestCase):
+
+    def setUp(self):
+        self.builder = cps.SpeakerBuilder(0, 'test')
+
+    def test_no_source_fails(self):
+        with self.assertRaisesRegex(TypeError, 'Missing.*path.*'):
+            self.builder.set_audios()
+        with self.assertRaisesRegex(TypeError, 'Missing.*path.*'):
+            self.builder.set_audios(audio_format='')
+
+    @mk.patch('voxforge2sphinx.corpus.Audios')
+    def test_no_source_only_path(self, mock_audios):
+        self.builder.set_audios(audios_path='/home')
+        calls = [mk.call('/home', 'wav'), mk.call().populate()]
+        mock_audios.assert_has_calls(calls)
+
+    @mk.patch('voxforge2sphinx.corpus.Audios')
+    def test_no_source_both(self, mock_audios):
+        self.builder.set_audios(audios_path='/home', audio_format='raw')
+        calls = [mk.call('/home', 'raw'), mk.call().populate()]
+        mock_audios.assert_has_calls(calls)
+
+    @mk.patch('voxforge2sphinx.corpus.Audios')
+    def test_source_no_args(self, mock_audios):
+        self.builder.relative_path = '/home'
+        self.builder.set_audios()
+        calls = [mk.call('/home', 'wav'), mk.call().populate()]
+        mock_audios.assert_has_calls(calls)
+
+    @mk.patch('voxforge2sphinx.corpus.Audios')
+    def test_source_only_path(self, mock_audios):
+        self.builder.relative_path = '/home'
+        self.builder.set_audios(audios_path='wav')
+        calls = [mk.call(path.join('/home', 'wav'), 'wav'), mk.call().populate()]
+        mock_audios.assert_has_calls(calls)
+
+    @mk.patch('voxforge2sphinx.corpus.Audios')
+    def test_source_only_format(self, mock_audios):
+        self.builder.relative_path = '/home'
+        self.builder.set_audios(audio_format='raw')
+        calls = [mk.call('/home', 'raw'), mk.call().populate()]
+        mock_audios.assert_has_calls(calls)
+
+    @mk.patch('voxforge2sphinx.corpus.Audios')
+    def test_source_only_path(self, mock_audios):
+        self.builder.relative_path = '/home'
+        self.builder.set_audios(audios_path='wav', audio_format='raw')
+        calls = [mk.call(path.join('/home', 'wav'), 'raw'), mk.call().populate()]
+        mock_audios.assert_has_calls(calls)
+
+
 class SpkBuilderPromptsTest(unittest.TestCase):
 
     def setUp(self):
