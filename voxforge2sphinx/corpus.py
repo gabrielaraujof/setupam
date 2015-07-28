@@ -193,6 +193,7 @@ class SpeakerBuilder:
         audio_format = kwargs.get('audio_format', 'wav')
         if self.relative_path:
             path_list = [os.path.join(self.relative_path, p) for p in path_list]
+            path_list.append(os.path.join(self.relative_path, 'wav'))
             path_list.append(self.relative_path)
         if not path_list:
             raise TypeError("Missing the path list of audios' directory.")
