@@ -25,6 +25,11 @@ from os import path
 import voxforge2sphinx.corpus as cps
 
 
+def glob_side_effect():
+        yield []
+        yield ['']
+
+
 class CorpusTest(unittest.TestCase):
     @mk.patch('voxforge2sphinx.corpus.glob.glob')
     def test_track_files(self, mock_glob):
@@ -45,49 +50,58 @@ class SpkBuilderAudiosTest(unittest.TestCase):
         self.builder = cps.SpeakerBuilder(0, 'test')
 
     def test_no_source_fails(self):
-        with self.assertRaisesRegex(TypeError, 'Missing.*path.*'):
+        with self.assertRaisesRegex(TypeError, 'Missing.*path list'):
             self.builder.set_audios()
-        with self.assertRaisesRegex(TypeError, 'Missing.*path.*'):
+        with self.assertRaisesRegex(TypeError, 'Missing.*path list'):
             self.builder.set_audios(audio_format='')
+        with mk.patch('voxforge2sphinx.corpus.glob.glob', return_value=[]):
+            with self.assertRaisesRegex(ValueError, '.*invalid path list.*'):
+                self.builder.set_audios('x', 'y')
 
     @mk.patch('voxforge2sphinx.corpus.Audios')
-    def test_no_source_only_path(self, mock_audios):
-        self.builder.set_audios(audios_path='/home')
-        calls = [mk.call('/home', 'wav'), mk.call().populate()]
+    @mk.patch('voxforge2sphinx.corpus.glob.glob', side_effect=glob_side_effect())
+    def test_no_source_only_path(self, mock_glob, mock_audios):
+        self.builder.set_audios('/home', '/test')
+        calls = [mk.call('/test', 'wav'), mk.call().populate()]
         mock_audios.assert_has_calls(calls)
 
     @mk.patch('voxforge2sphinx.corpus.Audios')
-    def test_no_source_both(self, mock_audios):
-        self.builder.set_audios(audios_path='/home', audio_format='raw')
-        calls = [mk.call('/home', 'raw'), mk.call().populate()]
+    @mk.patch('voxforge2sphinx.corpus.glob.glob', side_effect=glob_side_effect())
+    def test_no_source_both(self, mock_glob, mock_audios):
+        self.builder.set_audios('/home', '/test', audio_format='raw')
+        calls = [mk.call('/test', 'raw'), mk.call().populate()]
         mock_audios.assert_has_calls(calls)
 
     @mk.patch('voxforge2sphinx.corpus.Audios')
-    def test_source_no_args(self, mock_audios):
+    @mk.patch('voxforge2sphinx.corpus.glob.glob', return_value=[''])
+    def test_source_no_args(self, mock_glob, mock_audios):
         self.builder.relative_path = '/home'
         self.builder.set_audios()
         calls = [mk.call('/home', 'wav'), mk.call().populate()]
         mock_audios.assert_has_calls(calls)
 
     @mk.patch('voxforge2sphinx.corpus.Audios')
-    def test_source_only_path(self, mock_audios):
+    @mk.patch('voxforge2sphinx.corpus.glob.glob', return_value=[''])
+    def test_source_only_path(self, mock_glob, mock_audios):
         self.builder.relative_path = '/home'
-        self.builder.set_audios(audios_path='wav')
+        self.builder.set_audios('wav')
         calls = [mk.call(path.join('/home', 'wav'), 'wav'), mk.call().populate()]
         mock_audios.assert_has_calls(calls)
 
     @mk.patch('voxforge2sphinx.corpus.Audios')
-    def test_source_only_format(self, mock_audios):
+    @mk.patch('voxforge2sphinx.corpus.glob.glob', return_value=[''])
+    def test_source_only_format(self, mock_glob, mock_audios):
         self.builder.relative_path = '/home'
         self.builder.set_audios(audio_format='raw')
         calls = [mk.call('/home', 'raw'), mk.call().populate()]
         mock_audios.assert_has_calls(calls)
 
     @mk.patch('voxforge2sphinx.corpus.Audios')
-    def test_source_only_path(self, mock_audios):
+    @mk.patch('voxforge2sphinx.corpus.glob.glob', side_effect=glob_side_effect())
+    def test_source_both(self, mock_glob, mock_audios):
         self.builder.relative_path = '/home'
-        self.builder.set_audios(audios_path='wav', audio_format='raw')
-        calls = [mk.call(path.join('/home', 'wav'), 'raw'), mk.call().populate()]
+        self.builder.set_audios('wav', audio_format='raw')
+        calls = [mk.call(path.join('/home'), 'raw'), mk.call().populate()]
         mock_audios.assert_has_calls(calls)
 
 
