@@ -33,6 +33,7 @@ from collections import UserDict, UserList
 def track_files(file_path, file_format):
     return glob.glob('{}/*.{}'.format(file_path, file_format)).sort()
 
+
 def id_generator():
     i = 1
     while True:
