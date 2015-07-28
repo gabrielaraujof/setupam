@@ -33,6 +33,12 @@ from collections import UserDict, UserList
 def track_files(file_path, file_format):
     return glob.glob('{}/*.{}'.format(file_path, file_format)).sort()
 
+def id_generator():
+    i = 1
+    while True:
+        yield i
+        i += 1
+
 
 class Corpus:
     """Handle the organization and compilation of the speech corpus."""
@@ -41,83 +47,78 @@ class Corpus:
     METADATA_DIR = 'etc'
 
     FILEID_EXT = 'fileids'
-    TRANSC_EXT = 'transcription'
+    TRANSCRIPT_EXT = 'transcription'
 
-    speaker_counter = 0
-    audio_counter = 0
+    SPEAKER_ID = id_generator()
+    AUDIO_ID = id_generator()
 
-    def __init__(self, name, suffix, source_path, target_path, audio_fmt='wav'):
+    def __init__(self, name, suffix, trg_path, src_path=None):
         self.name = name
         self.suffix = suffix
+        self.target_path = trg_path
+        self.src = src_path
+        # Initialization
         self.speakers = []
-        self.src = source_path
-        self.base_path = target_path
-        self.corpus_path = path.join(self.base_path, self.name)
-        self.audio_format = audio_fmt
+        self.trans_file = self.fileid_file = None
+
+    @property
+    def corpus_path(self):
+        return path.join(self.target_path, self.name)
+
+    def set_up(self):
+        self.create_folder(Corpus.AUDIO_DIR)
+        self.create_folder(Corpus.METADATA_DIR)
+        trans_filename = self.format_filename(Corpus.TRANSCRIPT_EXT)
+        self.trans_file = TranscriptionWriter(path.join(self.corpus_path, Corpus.METADATA_DIR, trans_filename))
+        fileid_filename = self.format_filename(Corpus.FILEID_EXT)
+        self.fileid_file = FileidWriter(path.join(self.corpus_path, Corpus.METADATA_DIR, fileid_filename))
+
+    def create_folder(self, folder_path, absolute=False):
+        full_path = folder_path if absolute else path.join(self.corpus_path, folder_path)
+        makedirs(full_path)
+        return full_path
 
     @staticmethod
     def format_speaker_id(spk_id):
         return '{:06}'.format(spk_id)
 
     @staticmethod
-    def format_audio_id(spk_id, audio_id):
-        return '{}_{:03}'.format(Corpus.format_speaker_id(spk_id), audio_id)
+    def format_audio_id(spk_repr, audio_id):
+        return '{}_{:03}'.format(spk_repr, audio_id)
 
     def format_filename(self, ext):
         return '{0}_{1}.{2}'.format(self.name, self.suffix, ext)
 
-    def set_up(self):
-        assert not path.exists(self.corpus_path)
-        self.create_folder(Corpus.AUDIO_DIR)
-        self.create_folder(Corpus.METADATA_DIR)
-        trans_filename = self.format_filename(Corpus.TRANSC_EXT)
-        self.trans_file = TranscriptionWriter(path.join(self.corpus_path, Corpus.METADATA_DIR, trans_filename))
-        fileid_filename = self.format_filename(Corpus.FILEID_EXT)
-        self.fileid_file = FileidWriter(path.join(self.corpus_path, Corpus.METADATA_DIR, fileid_filename))
-
     def add_speaker(self, speaker):
-        assert isinstance(speaker, Speaker)
         self.speakers.append(speaker)
 
-    def create_speaker(self, source_path):
-        assert isinstance(source_path, str)
-        speaker = Speaker(source_path)
-        self.speakers.append(speaker)
+    def _process_audio(self, original_path, target_path, audio_repr, audio_ext, prompt, speaker_repr):
+        try:
+            # Copy audio file
+            new_path = path.join(target_path, '{}.{}'.format(audio_repr, audio_ext))
+            copy2(original_path, new_path)
+            # Include transcription
+            self.trans_file.add_content(prompt, audio_repr)
+            # Include file_id
+            self.fileid_file.add_content(speaker_repr, audio_repr)
+        except IOError as e:
+            print('I/O error(%s): %s %s' % (e.errno, e.strerror, e.filename))
+            sys.exit(1)
 
-    def compile(self):
-        audio_ref = 0
-        for spk_id, spk in enumerate(self.speakers, start=1):
-            spk_repr = Corpus.format_speaker_id(spk_id)
-            target_path = self.create_folder(spk_repr)
-            trans = spk.gather_transcription()
-            for audio in spk.gather_audios(audio_format=self.audio_format):
-                audio_name = path.splitext(path.basename(audio))[0]
-                if audio_name in trans:  # Has transcription?
-                    audio_repr = Corpus.format_audio_id(spk_id, audio_ref)
-                    new_filename = path.join(target_path, '{}.{}'.format(audio_repr, self.audio_format))
-                    try:
-                        copy2(audio, new_filename)
-                        self.trans_file.add_content(trans[audio_name].lower())
-                        self.fileid_file.add_content(spk_repr, audio_repr)
-                        audio_ref += 1
-                    except IOError as e:
-                        print('I/O error(%s): %s %s' % (e.errno, e.strerror, e.filename))
-                        sys.exit(1)
-
-    # def process_audio(self, audio_file, trans):
-    #    # TODO copiar audio
-    #    # TODO adicionar transc
-    #    # TODO adicionar fileid
-    #    pass
+    def compile_corpus(self):
+        for spk in self.speakers:
+            spk_repr = str(spk)
+            target_path = self.create_folder(Corpus.AUDIO_DIR, spk_repr)
+            for audio_name, audio_ext, audio_path in spk.audios:
+                if audio_name in spk.prompts:  # Has transcription?
+                    audio_repr = Corpus.format_audio_id(spk_repr, next(Corpus.AUDIO_ID))
+                    self._process_audio(
+                        audio_path, target_path, audio_repr, audio_ext, spk.prompts[audio_name], spk_repr
+                    )
 
     def store_files(self):
         self.trans_file.store()
         self.fileid_file.store()
-
-    def create_folder(self, folder_path, absolute=False):
-        full_path = folder_path if absolute else path.join(self.corpus_path, folder_path)
-        makedirs(full_path)
-        return full_path
 
 
 class FileWriter:
@@ -142,7 +143,7 @@ class FileWriter:
 
 class TranscriptionWriter(FileWriter):
 
-    FORMAT = '<s> {0} </s> ({1})'
+    FORMAT = '<s> {0} </s> ({1})'  # Prompt / Audio representation
     trans_regex = re.compile('\S*[,.?!]+\S*')
 
     def __init__(self, target_file):
@@ -155,7 +156,7 @@ class TranscriptionWriter(FileWriter):
 
 class FileidWriter(FileWriter):
 
-    FORMAT = '{0}/{1}'
+    FORMAT = '{0}/{1}'  # Speaker representation / Audio representation
 
     def __init__(self, target_file):
         super().__init__(target_file)
@@ -168,6 +169,9 @@ class Speaker:
         self._id = id_number
         self.name = name
         self.metadata = self.prompts = self.audios = None
+
+    def __str__(self):
+        return Corpus.format_speaker_id(self._id)
 
 
 class SpeakerBuilder:
@@ -279,7 +283,8 @@ class Audios(UserList):
     def populate(self):
         audios_files = track_files(self.path, self.format)
         for file_path in audios_files:
-            self.data.append((path.splitext(path.basename(file_path))[0], file_path))
+            filename, file_extension = path.splitext(path.basename(file_path))
+            self.data.append((filename, file_extension[1:], file_path))
 
 
 class Metadata(UserDict):
