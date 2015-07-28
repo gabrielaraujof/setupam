@@ -180,14 +180,19 @@ class SpeakerBuilder:
     def speaker(self):
         return self._speaker
 
-    def set_audios(self, audios_path, audio_format='wav'):
-        full_path = path.join(self.relative_path, audios_path) if self.relative_path else audios_path
-        audios_list = Audios(full_path, audio_format)
-        audios_list.populate()
-        self.speaker.audios = audios_list
+    def set_audios(self, **kwargs):
+        full_path = kwargs.get('audios_path')
+        audio_format = kwargs.get('audio_format', 'wav')
+        if self.relative_path:
+            full_path = path.join(self.relative_path, full_path) if full_path else self.relative_path
+        if full_path and audio_format:
+            audios_list = Audios(full_path, audio_format)
+            audios_list.populate()
+            self.speaker.audios = audios_list
+        # TODO else
 
     def set_prompts(self, *args, **kwargs):
-        single_path_list = list(args)
+        single_path_list = args
         multi_path = kwargs.get('multi')
         if self.relative_path:
             single_path_list = [path.join(self.relative_path, p) for p in single_path_list]
@@ -198,6 +203,7 @@ class SpeakerBuilder:
             prompts = Prompts.create_prompts(*single_path_list, multi_path=multi_path)
             prompts.populate()
             self.speaker.prompts = prompts
+        # TODO else
 
     def set_metadata(self, **kwargs):
         full_path = kwargs.get('path')
@@ -210,6 +216,8 @@ class SpeakerBuilder:
             metadata = Metadata(full_path, kwargs['regex']) if 'regex' in kwargs else Metadata(full_path)
             metadata.populate()
             self.speaker.metadata = metadata
+        # else:
+        #     raise TypeError('Missing the file path.')
 
 
 class Prompts(UserDict):
@@ -219,10 +227,6 @@ class Prompts(UserDict):
 
     @staticmethod
     def create_prompts(*args, **kwargs):
-        if len(args) < 1:
-            raise TypeError('Missing positional arguments. At least one must be given.')
-        if 'multi_path' not in kwargs:
-            raise TypeError('Missing keyword argument "multi_path".')
         for file_path in args:
             if path.exists(file_path):
                 return SingleFilePrompts(file_path)
