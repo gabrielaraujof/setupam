@@ -45,12 +45,18 @@ class SpkBuilderPromptsTest(unittest.TestCase):
         self.builder = cps.SpeakerBuilder(0, 'test')
 
     def test_no_source_fails(self):
-        self.builder.set_prompts()
-        self.assertEqual(self.builder.speaker.prompts, None)
+        with self.assertRaisesRegex(TypeError, 'Missing arguments.*'):
+            self.builder.set_prompts()
+
+    @mk.patch('voxforge2sphinx.corpus.Prompts.create_prompts')
+    def test_no_source_only_one(self, mock_prompts):
         self.builder.set_prompts('file1', 'file2')
-        self.assertEqual(self.builder.speaker.prompts, None)
+        calls = [mk.call('file1', 'file2'), mk.call().populate()]
+        mock_prompts.assert_has_calls(calls)
+        mock_prompts.reset_mock()
         self.builder.set_prompts(multi='folder')
-        self.assertEqual(self.builder.speaker.prompts, None)
+        calls = [mk.call(multi_path='folder'), mk.call().populate()]
+        mock_prompts.assert_has_calls(calls)
 
     @mk.patch('voxforge2sphinx.corpus.Prompts.create_prompts')
     def test_no_source_both(self, mock_prompts):
@@ -93,18 +99,16 @@ class SpkBuilderPromptsTest(unittest.TestCase):
         mock_prompts.assert_has_calls(calls)
 
 
-
-
 class SpkBuilderMetadataTest(unittest.TestCase):
 
     def setUp(self):
         self.builder = cps.SpeakerBuilder(0, 'test')
 
     def test_no_source_fails(self):
-        self.builder.set_metadata()
-        self.assertEqual(self.builder.speaker.metadata, None)
-        self.builder.set_metadata(regex='')
-        self.assertEqual(self.builder.speaker.metadata, None)
+        with self.assertRaisesRegex(TypeError, 'Missing.*path'):
+            self.builder.set_metadata()
+        with self.assertRaisesRegex(TypeError, 'Missing.*path'):
+            self.builder.set_metadata(regex='')
 
     @mk.patch('voxforge2sphinx.corpus.Metadata.populate')
     def test_no_source_only_path(self, mock_populate):
