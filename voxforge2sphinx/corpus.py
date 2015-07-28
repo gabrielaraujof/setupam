@@ -109,7 +109,7 @@ class Corpus:
     def compile_corpus(self):
         for spk in self.speakers:
             spk_repr = str(spk)
-            target_path = self.create_folder(Corpus.AUDIO_DIR, spk_repr)
+            target_path = self.create_folder(path.join(Corpus.AUDIO_DIR, spk_repr))
             for audio_name, audio_ext, audio_path in spk.audios:
                 if audio_name in spk.prompts:  # Has transcription?
                     audio_repr = Corpus.format_audio_id(spk_repr, next(Corpus.AUDIO_ID))
