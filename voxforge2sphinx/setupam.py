@@ -23,10 +23,10 @@ __version__ = "0.1"
 __maintainer__ = "Gabriel Araujo"
 
 import argparse
-from os import path, makedirs
-from glob import iglob
-from math import floor
-from random import shuffle
+import os
+import glob
+import math
+import random
 
 from voxforge2sphinx import speaker, metadata
 
@@ -50,31 +50,31 @@ args = parser.parse_args()
 
 model = args.model
 source = args.source
-target = path.join(args.target, model)
+target = os.path.join(args.target, model)
 db_test_p = args.quota
 
 
 def get_all_dirs(source):
     '''Get all wav directories.'''
-    return [path.split(x)[0] for x in sorted(iglob(path.join(source, '*/wav')))]
+    return [os.path.split(x)[0] for x in sorted(glob.iglob(os.path.join(source, '*/wav')))]
 
 if __name__ == '__main__':
     metadata._verbose = args.verbose
     speaker._verbose = args.verbose
 
     # Creating root directories
-    etc_dir = path.join(target, 'etc')
-    if not path.exists(etc_dir):
-        makedirs(etc_dir) # Creating the configuration files' directory.
-    wav_dir = path.join(target, 'wav')
-    if not path.exists(wav_dir):
-        makedirs(wav_dir) # Creating the audios' directory.
+    etc_dir = os.path.join(target, 'etc')
+    if not os.path.exists(etc_dir):
+        os.makedirs(etc_dir) # Creating the configuration files' directory.
+    wav_dir = os.path.join(target, 'wav')
+    if not os.path.exists(wav_dir):
+        os.makedirs(wav_dir) # Creating the audios' directory.
 
     # Path of configuration files
-    train_fileid = path.join(etc_dir, '{}_train.fileids'.format(model))
-    train_trans = path.join(etc_dir, '{}_train.transcription'.format(model))
-    test_fileid = path.join(etc_dir, '{}_test.fileids'.format(model))
-    test_trans = path.join(etc_dir, '{}_test.transcription'.format(model))
+    train_fileid = os.path.join(etc_dir, '{}_train.fileids'.format(model))
+    train_trans = os.path.join(etc_dir, '{}_train.transcription'.format(model))
+    test_fileid = os.path.join(etc_dir, '{}_test.fileids'.format(model))
+    test_trans = os.path.join(etc_dir, '{}_test.transcription'.format(model))
 
     # Get all speaker directories to setup.
     dirs = get_all_dirs(source)
@@ -82,11 +82,11 @@ if __name__ == '__main__':
     print("Found {} speakers' directories.".format(nspeakers))
 
     # Compute the percentage of the tests base
-    nstest =  floor(db_test_p * nspeakers)
+    nstest =  math.floor(db_test_p * nspeakers)
     nstrain = nspeakers - nstest
     print('Selected {} speakers for the train database, and {} speakers for the tests database.'.format(nstrain,nstest))
 
-    shuffle(dirs) #choose speakers randomly
+    random.shuffle(dirs) #choose speakers randomly
 
     # Iterating over train speakers' directories
     for speaker_id in range(nstrain):
