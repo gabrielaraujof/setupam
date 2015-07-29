@@ -88,24 +88,20 @@ class Corpus:
     def format_audio_id(spk_repr, audio_id):
         return '{}_{:03}'.format(spk_repr, audio_id)
 
+    @staticmethod
+    def _copy_audio(original_path, target_path, audio_repr, audio_ext):
+        try:
+            new_path = os.path.join(target_path, '{}.{}'.format(audio_repr, audio_ext))
+            shutil.copy2(original_path, new_path)  # Copy audio file to the new location
+        except IOError as e:
+            print('I/O error(%s): %s %s' % (e.errno, e.strerror, e.filename))
+            sys.exit(1)
+
     def format_filename(self, ext):
         return '{0}_{1}.{2}'.format(self.name, self.suffix, ext)
 
     def add_speaker(self, speaker):
         self.speakers.append(speaker)
-
-    def _process_audio(self, original_path, target_path, audio_repr, audio_ext, prompt, speaker_repr):
-        try:
-            # Copy audio file
-            new_path = os.path.join(target_path, '{}.{}'.format(audio_repr, audio_ext))
-            shutil.copy2(original_path, new_path)
-            # Include transcription
-            self.trans_file.add_content(prompt, audio_repr)
-            # Include file_id
-            self.fileid_file.add_content(speaker_repr, audio_repr)
-        except IOError as e:
-            print('I/O error(%s): %s %s' % (e.errno, e.strerror, e.filename))
-            sys.exit(1)
 
     def _store_files(self):
         self.trans_file.store()
@@ -118,9 +114,11 @@ class Corpus:
             for audio_name, audio_ext, audio_path in spk.audios:
                 if audio_name in spk.prompts:  # Has transcription?
                     audio_repr = Corpus.format_audio_id(spk_repr, next(Corpus.AUDIO_ID))
-                    self._process_audio(
-                        audio_path, target_path, audio_repr, audio_ext, spk.prompts[audio_name], spk_repr
-                    )
+                    self._copy_audio(audio_path, target_path, audio_repr, audio_ext)
+                    # Include transcription
+                    self.trans_file.add_content(spk.prompts[audio_name], audio_repr)
+                    # Include file_id
+                    self.fileid_file.add_content(spk_repr, audio_repr)
         self._store_files()
 
 
