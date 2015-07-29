@@ -89,9 +89,8 @@ class Corpus:
         return '{}_{:03}'.format(spk_repr, audio_id)
 
     @staticmethod
-    def _copy_audio(original_path, target_path, audio_repr, audio_ext):
+    def _copy_audio(original_path, new_path):
         try:
-            new_path = os.path.join(target_path, '{}.{}'.format(audio_repr, audio_ext))
             shutil.copy2(original_path, new_path)  # Copy audio file to the new location
         except IOError as e:
             print('I/O error(%s): %s %s' % (e.errno, e.strerror, e.filename))
@@ -110,11 +109,12 @@ class Corpus:
     def compile_corpus(self):
         for spk in self.speakers:
             spk_repr = str(spk)
-            target_path = self.create_folder(os.path.join(Corpus.AUDIO_DIR, spk_repr))
-            for audio_name, audio_ext, audio_path in spk.audios:
+            spk_dir_path = self.create_folder(os.path.join(Corpus.AUDIO_DIR, spk_repr))
+            for audio_name, audio_ext, audio_old_path in spk.audios:
                 if audio_name in spk.prompts:  # Has transcription?
                     audio_repr = Corpus.format_audio_id(spk_repr, next(Corpus.AUDIO_ID))
-                    self._copy_audio(audio_path, target_path, audio_repr, audio_ext)
+                    audio_new_path = os.path.join(spk_dir_path, '{}.{}'.format(audio_repr, audio_ext))
+                    self._copy_audio(audio_old_path, audio_new_path)
                     # Include transcription
                     self.trans_file.add_content(spk.prompts[audio_name], audio_repr)
                     # Include file_id
