@@ -200,8 +200,8 @@ class SpeakerBuilder:
             raise TypeError("Missing the path list of audios' directory.")
         for audios_path in path_list:
             if len(glob.glob(os.path.join(audios_path, '*.{}'.format(audio_format)))) > 0:
-                audios_list = Audios(audios_path, audio_format)
-                audios_list.populate()
+                audios_list = Audios()
+                audios_list.populate(audios_path, audio_format)
                 self.speaker.audios = audios_list
                 break
         else:
@@ -288,14 +288,8 @@ class MultiFilePrompts(Prompts):
 
 
 class Audios(collections.UserList):
-
-    def __init__(self, audios_path, audio_format):
-        super().__init__()
-        self.path = audios_path
-        self.format = audio_format
-
-    def populate(self):
-        audios_files = track_files(self.path, self.format)
+    def populate(self, audios_path, audios_format):
+        audios_files = track_files(audios_path, audios_format)
         for file_path in audios_files:
             filename, file_extension = os.path.splitext(os.path.basename(file_path))
             self.data.append((filename, file_extension[1:], file_path))

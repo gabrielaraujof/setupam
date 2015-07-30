@@ -62,14 +62,14 @@ class SpkBuilderAudiosTest(unittest.TestCase):
     @mk.patch('setupam.corpus.glob.glob', side_effect=glob_side_effect())
     def test_no_source_only_path(self, mock_glob, mock_audios):
         self.builder.set_audios('/home', '/test')
-        calls = [mk.call('/test', 'wav'), mk.call().populate()]
+        calls = [mk.call(), mk.call().populate('/test', 'wav')]
         mock_audios.assert_has_calls(calls)
 
     @mk.patch('setupam.corpus.Audios')
     @mk.patch('setupam.corpus.glob.glob', side_effect=glob_side_effect())
     def test_no_source_both(self, mock_glob, mock_audios):
         self.builder.set_audios('/home', '/test', audio_format='raw')
-        calls = [mk.call('/test', 'raw'), mk.call().populate()]
+        calls = [mk.call(), mk.call().populate('/test', 'raw')]
         mock_audios.assert_has_calls(calls)
 
     @mk.patch('setupam.corpus.Audios')
@@ -77,7 +77,7 @@ class SpkBuilderAudiosTest(unittest.TestCase):
     def test_source_no_args(self, mock_glob, mock_audios):
         self.builder.relative_path = '/home'
         self.builder.set_audios()
-        calls = [mk.call(path.join('/home', 'wav'), 'wav'), mk.call().populate()]
+        calls = [mk.call(), mk.call().populate(path.join('/home', 'wav'), 'wav')]
         mock_audios.assert_has_calls(calls)
 
     @mk.patch('setupam.corpus.Audios')
@@ -85,7 +85,7 @@ class SpkBuilderAudiosTest(unittest.TestCase):
     def test_source_only_path(self, mock_glob, mock_audios):
         self.builder.relative_path = '/home'
         self.builder.set_audios('test')
-        calls = [mk.call(path.join('/home', 'test'), 'wav'), mk.call().populate()]
+        calls = [mk.call(), mk.call().populate(path.join('/home', 'test'), 'wav')]
         mock_audios.assert_has_calls(calls)
 
     @mk.patch('setupam.corpus.Audios')
@@ -93,7 +93,7 @@ class SpkBuilderAudiosTest(unittest.TestCase):
     def test_source_only_format(self, mock_glob, mock_audios):
         self.builder.relative_path = '/home'
         self.builder.set_audios(audio_format='raw')
-        calls = [mk.call(path.join('/home', 'wav'), 'raw'), mk.call().populate()]
+        calls = [mk.call(), mk.call().populate(path.join('/home', 'wav'), 'raw')]
         mock_audios.assert_has_calls(calls)
 
     @mk.patch('setupam.corpus.Audios')
@@ -101,7 +101,7 @@ class SpkBuilderAudiosTest(unittest.TestCase):
     def test_source_both(self, mock_glob, mock_audios):
         self.builder.relative_path = '/home'
         self.builder.set_audios('sub', 'test', audio_format='raw')
-        calls = [mk.call(path.join('/home', 'test'), 'raw'), mk.call().populate()]
+        calls = [mk.call(), mk.call().populate(path.join('/home', 'test'), 'raw')]
         mock_audios.assert_has_calls(calls)
 
 
@@ -300,12 +300,12 @@ class MultiFilePromptsTest(unittest.TestCase):
 class AudiosTest(unittest.TestCase):
 
     def setUp(self):
-        self.audios = cps.Audios('', '')
+        self.audios = cps.Audios()
 
     def test_populate(self):
         return_list = ('/home/001.wav', '/home/audio.raw', 'file.mp3')
         with mk.patch('setupam.corpus.track_files', return_value=return_list):
-            self.audios.populate()
+            self.audios.populate('', '')
             self.assertEqual(
                 tuple(self.audios),
                 (('001', 'wav', '/home/001.wav'), ('audio', 'raw', '/home/audio.raw'), ('file', 'mp3', 'file.mp3')))
