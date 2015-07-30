@@ -176,57 +176,45 @@ class SpkBuilderMetadataTest(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, 'Missing.*path'):
             self.builder.set_metadata(regex='')
 
-    @mk.patch('setupam.corpus.Metadata.populate')
-    def test_no_source_only_path(self, mock_populate):
+    @mk.patch('setupam.corpus.Metadata')
+    def test_no_source_only_path(self, mock_metadata):
         self.builder.set_metadata(path='test_path')
-        self.assertEqual(self.builder.speaker.metadata, {})
-        self.assertEqual(self.builder.speaker.metadata.path, 'test_path')
-        self.assertEqual(self.builder.speaker.metadata.re, cps.Metadata.REGEX)
-        mock_populate.assert_called()
+        calls = [mk.call(), mk.call().populate('test_path')]
+        mock_metadata.assert_has_calls(calls)
 
-    @mk.patch('setupam.corpus.Metadata.populate')
-    def test_no_source_both(self, mock_populate):
+    @mk.patch('setupam.corpus.Metadata')
+    def test_no_source_both(self, mock_metadata):
         self.builder.set_metadata(path='test_path', regex='test')
-        self.assertEqual(self.builder.speaker.metadata, {})
-        self.assertEqual(self.builder.speaker.metadata.path, 'test_path')
-        self.assertEqual(self.builder.speaker.metadata.re, 'test')
-        mock_populate.assert_called()
+        calls = [mk.call(), mk.call().populate('test_path', 'test')]
+        mock_metadata.assert_has_calls(calls)
 
-    @mk.patch('setupam.corpus.Metadata.populate')
-    def test_source_no_args(self, mock_populate):
+    @mk.patch('setupam.corpus.Metadata')
+    def test_source_no_args(self, mock_metadata):
         self.builder.relative_path = '/home'
         self.builder.set_metadata()
-        self.assertEqual(self.builder.speaker.metadata, {})
-        self.assertEqual(self.builder.speaker.metadata.path, path.join('/home', 'etc', 'README'))
-        self.assertEqual(self.builder.speaker.metadata.re, cps.Metadata.REGEX)
-        mock_populate.assert_called()
+        calls = [mk.call(), mk.call().populate(path.join('/home', 'etc', 'README'))]
+        mock_metadata.assert_has_calls(calls)
 
-    @mk.patch('setupam.corpus.Metadata.populate')
-    def test_source_only_regex(self, mock_populate):
+    @mk.patch('setupam.corpus.Metadata')
+    def test_source_only_regex(self, mock_metadata):
         self.builder.relative_path = '/home'
         self.builder.set_metadata(regex='re_test')
-        self.assertEqual(self.builder.speaker.metadata, {})
-        self.assertEqual(self.builder.speaker.metadata.path, path.join('/home', 'etc', 'README'))
-        self.assertEqual(self.builder.speaker.metadata.re, 're_test')
-        mock_populate.assert_called()
+        calls = [mk.call(), mk.call().populate(path.join('/home', 'etc', 'README'), 're_test')]
+        mock_metadata.assert_has_calls(calls)
 
-    @mk.patch('setupam.corpus.Metadata.populate')
-    def test_source_only_path(self, mock_populate):
+    @mk.patch('setupam.corpus.Metadata')
+    def test_source_only_path(self, mock_metadata):
         self.builder.relative_path = '/home'
         self.builder.set_metadata(path='test_path')
-        self.assertEqual(self.builder.speaker.metadata, {})
-        self.assertEqual(self.builder.speaker.metadata.path, path.join('/home', 'test_path'))
-        self.assertEqual(self.builder.speaker.metadata.re, cps.Metadata.REGEX)
-        mock_populate.assert_called()
+        calls = [mk.call(), mk.call().populate(path.join('/home', 'test_path'))]
+        mock_metadata.assert_has_calls(calls)
 
-    @mk.patch('setupam.corpus.Metadata.populate')
-    def test_source_both(self, mock_populate):
+    @mk.patch('setupam.corpus.Metadata')
+    def test_source_both(self, mock_metadata):
         self.builder.relative_path = '/home'
         self.builder.set_metadata(path='test_path', regex='test')
-        self.assertEqual(self.builder.speaker.metadata, {})
-        self.assertEqual(self.builder.speaker.metadata.path, path.join('/home', 'test_path'))
-        self.assertEqual(self.builder.speaker.metadata.re, 'test')
-        mock_populate.assert_called()
+        calls = [mk.call(), mk.call().populate(path.join('/home', 'test_path'), 'test')]
+        mock_metadata.assert_has_calls(calls)
 
 
 class FileWriterTest(unittest.TestCase):
@@ -345,7 +333,7 @@ class MetadataTest(unittest.TestCase):
             'LANGUAGE': 'PT_BR'
         }
         with mk.patch('setupam.corpus.open', mk.mock_open(read_data=content_file), create=True):
-            self.metadata.populate()
+            self.metadata.populate('')
             self.assertEqual(self.metadata, exp_dict)
 
 if __name__ == "__main__":
