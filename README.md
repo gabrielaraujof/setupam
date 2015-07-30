@@ -1,4 +1,4 @@
-SetupAM [![Build Status](https://travis-ci.org/gabrielaraujof/setupam.svg)](https://travis-ci.org/gabrielaraujof/setupam)
+SetupAM  [![Build Status](https://travis-ci.org/gabrielaraujof/setupam.svg)](https://travis-ci.org/gabrielaraujof/setupam) [![Coverage Status](https://coveralls.io/repos/gabrielaraujof/setupam/badge.svg?branch=master&service=github)](https://coveralls.io/github/gabrielaraujof/setupam?branch=master) [![Code Climate](https://codeclimate.com/github/gabrielaraujof/setupam/badges/gpa.svg)](https://codeclimate.com/github/gabrielaraujof/setupam)
 ===================
 
 A command-line tool to setup a speech corpus for training an acoustic model for CMU Sphinx.
