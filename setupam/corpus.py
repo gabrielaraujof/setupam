@@ -232,8 +232,11 @@ class SpeakerBuilder:
             else:
                 full_path = os.path.join(self.relative_path, 'etc', 'README')
         if full_path:
-            metadata = Metadata(full_path, kwargs['regex']) if 'regex' in kwargs else Metadata(full_path)
-            metadata.populate()
+            metadata = Metadata()
+            if 'regex' in kwargs:
+                metadata.populate(full_path, kwargs['regex'])
+            else:
+                metadata.populate(full_path)
             self.speaker.metadata = metadata
         else:
             raise TypeError('Missing the file path.')
@@ -309,13 +312,8 @@ class Metadata(collections.UserDict):
     GLOBAL_PATTERN = '|'.join('(?P<%s>%s)' % pair for pair in DATA_PATTERNS)
     REGEX = re.compile(GLOBAL_PATTERN)
 
-    def __init__(self, file_path, regex=REGEX):
-        super().__init__()
-        self.path = file_path
-        self.re = regex
-
-    def populate(self):
-        with open(self.path, mode='r', encoding='utf-8') as f:
+    def populate(self, file_path, regex=REGEX):
+        with open(file_path, mode='r', encoding='utf-8') as f:
             content_file = f.read()
-            for m in self.re.finditer(content_file):
+            for m in regex.finditer(content_file):
                 self.data[m.lastgroup] = m.group(m.lastgroup).strip()
