@@ -9,6 +9,6 @@ notifications:
     on_success: never
     on_failure: change
 script:
-  nosetests3 --with-coverage --cover-package=setupam
+  nosetests --with-coverage --cover-package=setupam
 after_success:
   coveralls
