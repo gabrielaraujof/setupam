@@ -82,7 +82,8 @@ if __name__ == '__main__':
     )
     random.shuffle(speakers_dir)  # Choose speakers randomly
 
-    train_corpus = cp.Corpus(model, 'train', target, src_path=source)
+    train_corpus = cp.Corpus(model, target, src_path=source)
+    train_corpus.suffix = cp.Corpus.TRAIN_SUFFIX
     logging.info('Setting up the training corpus...')
     train_corpus.set_up()
 
@@ -91,7 +92,8 @@ if __name__ == '__main__':
     logging.info('Building train corpus...')
     train_corpus.compile_corpus()
 
-    test_corpus = cp.Corpus(model, 'test', target, src_path=source)
+    test_corpus = cp.Corpus(model, target, src_path=source)
+    test_corpus.suffix = cp.Corpus.TEST_SUFFIX
     logging.info('Setting up the test corpus...')
     test_corpus.set_up()
     logging.info("Loading speakers' content...")
