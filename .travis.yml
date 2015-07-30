@@ -1,9 +1,14 @@
 language: python
 python:
   - "3.4"
-install: "pip install -r requirements.txt"
+install:
+  - "pip3 install -r requirements.txt"
+  - "pip3 install coveralls"
 notifications:
   email:
     on_success: never
     on_failure: change
-script: nosetests
+script:
+  nosetests3 --with-coverage --cover-package=setupam
+after_success:
+  coveralls
