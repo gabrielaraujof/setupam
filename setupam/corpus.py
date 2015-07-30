@@ -217,11 +217,12 @@ class SpeakerBuilder:
             multi_path = os.path.join(self.relative_path, multi_path) if multi_path else self.relative_path
         if not (single_path_list or multi_path):
             raise TypeError('Missing arguments. Must have at least a path for multi files.')
-        elif not multi_path:
-            prompts = Prompts.create_prompts(*single_path_list)
         else:
-            prompts = Prompts.create_prompts(*single_path_list, multi_path=multi_path)
-        prompts.populate()
+            prompts = Prompts()
+            if not multi_path:
+                prompts.populate(*single_path_list)
+            else:
+                prompts.populate(*single_path_list, multi_path=multi_path)
         self.speaker.prompts = prompts
 
     def set_metadata(self, **kwargs):
@@ -243,48 +244,28 @@ class SpeakerBuilder:
 
 
 class Prompts(collections.UserDict):
-
-    def populate(self):
-        raise NotImplementedError
-
-    @staticmethod
-    def create_prompts(*args, **kwargs):
-        for file_path in args:
-            if os.path.exists(file_path):
-                return SingleFilePrompts(file_path)
-        else:
-            return MultiFilePrompts(kwargs['multi_path'], kwargs.get('ext', 'txt'))
-
-
-class SingleFilePrompts(Prompts):
-
     PROMPT_PATTERN = r"(?P<id>^\d+).?[ ]+(?P<prompt>\S+( \S+)*)"
 
-    def __init__(self, file_path):
-        super().__init__()
-        self.file_path = file_path
-
-    def populate(self):
-        with open(self.file_path, mode='r', encoding='utf-8') as f:
+    def _populate_from_file(self, file_path):
+        with open(file_path, mode='r', encoding='utf-8') as f:
             for line in f.readlines():
-                m = re.search(SingleFilePrompts.PROMPT_PATTERN, line)
+                m = re.search(self.PROMPT_PATTERN, line)
                 if m:
                     self.data[m.group('id')] = m.group('prompt').lower()
 
-
-class MultiFilePrompts(Prompts):
-
-    def __init__(self, file_path, ext):
-        super().__init__()
-        self.file_path = file_path
-        self.ext = ext
-
-    def populate(self):
-        for trans_file in track_files(self.file_path, self.ext):
+    def _populate_from_files(self, file_path, ext):
+        for trans_file in track_files(file_path, ext):
             with open(trans_file, mode='r', encoding='utf-8') as f:
                 first_line = f.readline().strip()
                 if first_line.strip():
                     self.data[os.path.splitext(os.path.basename(trans_file))[0]] = first_line.lower()
+
+    def populate(self, *args, **kwargs):
+        for file_path in args:
+            if os.path.exists(file_path):
+                self._populate_from_file(file_path)
+        else:
+            return self._populate_from_files(kwargs['multi_path'], kwargs.get('ext', 'txt'))
 
 
 class Audios(collections.UserList):

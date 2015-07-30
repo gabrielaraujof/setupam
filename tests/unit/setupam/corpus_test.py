@@ -114,54 +114,54 @@ class SpkBuilderPromptsTest(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, 'Missing arguments.*'):
             self.builder.set_prompts()
 
-    @mk.patch('setupam.corpus.Prompts.create_prompts')
+    @mk.patch('setupam.corpus.Prompts')
     def test_no_source_only_one(self, mock_prompts):
         self.builder.set_prompts('file1', 'file2')
-        calls = [mk.call('file1', 'file2'), mk.call().populate()]
+        calls = [mk.call(), mk.call().populate('file1', 'file2')]
         mock_prompts.assert_has_calls(calls)
         mock_prompts.reset_mock()
         self.builder.set_prompts(multi='folder')
-        calls = [mk.call(multi_path='folder'), mk.call().populate()]
+        calls = [mk.call(), mk.call().populate(multi_path='folder')]
         mock_prompts.assert_has_calls(calls)
 
-    @mk.patch('setupam.corpus.Prompts.create_prompts')
+    @mk.patch('setupam.corpus.Prompts')
     def test_no_source_both(self, mock_prompts):
         self.builder.set_prompts('file1', 'file2', multi='folder')
-        calls = [mk.call('file1', 'file2', multi_path='folder'), mk.call().populate()]
+        calls = [mk.call(), mk.call().populate('file1', 'file2', multi_path='folder')]
         mock_prompts.assert_has_calls(calls)
 
-    @mk.patch('setupam.corpus.Prompts.create_prompts')
+    @mk.patch('setupam.corpus.Prompts')
     def test_source_no_args(self, mock_prompts):
         self.builder.relative_path = '/home'
         self.builder.set_prompts()
         paths = [path.join('/home', *args) for args in [('etc', 'prompts-original'), ('test.txt',)]]
-        calls = [mk.call(*paths, multi_path='/home'), mk.call().populate()]
+        calls = [mk.call(), mk.call().populate(*paths, multi_path='/home')]
         mock_prompts.assert_has_calls(calls)
 
-    @mk.patch('setupam.corpus.Prompts.create_prompts')
+    @mk.patch('setupam.corpus.Prompts')
     def test_source_only_path(self, mock_prompts):
         self.builder.relative_path = '/home'
         self.builder.set_prompts('file1', 'file2')
         paths = [
             path.join('/home', *args) for args in [('file1',), ('file2',), ('etc', 'prompts-original'), ('test.txt',)]]
-        calls = [mk.call(*paths, multi_path='/home'), mk.call().populate()]
+        calls = [mk.call(), mk.call().populate(*paths, multi_path='/home')]
         mock_prompts.assert_has_calls(calls)
 
-    @mk.patch('setupam.corpus.Prompts.create_prompts')
+    @mk.patch('setupam.corpus.Prompts')
     def test_source_only_multi(self, mock_prompts):
         self.builder.relative_path = '/home'
         self.builder.set_prompts(multi='folder')
         paths = [path.join('/home', *args) for args in [('etc', 'prompts-original'), ('test.txt',)]]
-        calls = [mk.call(*paths, multi_path=path.join('/home', 'folder')), mk.call().populate()]
+        calls = [mk.call(), mk.call().populate(*paths, multi_path=path.join('/home', 'folder'))]
         mock_prompts.assert_has_calls(calls)
 
-    @mk.patch('setupam.corpus.Prompts.create_prompts')
+    @mk.patch('setupam.corpus.Prompts')
     def test_source_both(self, mock_prompts):
         self.builder.relative_path = '/home'
         self.builder.set_prompts('file1', multi='folder')
         paths = [
             path.join('/home', *args) for args in [('file1',), ('etc', 'prompts-original'), ('test.txt',)]]
-        calls = [mk.call(*paths, multi_path=path.join('/home', 'folder')), mk.call().populate()]
+        calls = [mk.call(), mk.call().populate(*paths, multi_path=path.join('/home', 'folder'))]
         mock_prompts.assert_has_calls(calls)
 
 
@@ -241,33 +241,34 @@ class FileWriterTest(unittest.TestCase):
 
 
 class PromptsTest(unittest.TestCase):
-
-    @mk.patch('setupam.corpus.MultiFilePrompts')
-    @mk.patch('setupam.corpus.SingleFilePrompts')
-    def test_prompts(self, mock_single_prompts, mock_multi_prompts):
-        with self.assertRaises(NotImplementedError):
-            cps.Prompts().populate()
+    @mk.patch('setupam.corpus.Prompts._populate_from_files')
+    @mk.patch('setupam.corpus.Prompts._populate_from_file')
+    def test_prompts(self, mock_single_file, mock_multi_files):
         with self.assertRaises(KeyError):
-            cps.Prompts.create_prompts()
+            prompts = cps.Prompts()
+            prompts.populate()
         with self.assertRaises(KeyError):
-            cps.Prompts.create_prompts('')
+            prompts = cps.Prompts()
+            prompts.populate('')
 
         with mk.patch('setupam.corpus.os.path.exists', return_value=True):
-            cps.Prompts.create_prompts('', multi_path='', ext='')
-            mock_single_prompts.assert_called_with('')
-            mock_multi_prompts.assert_has_calls([])
-            mock_single_prompts.reset_mock()
+            prompts = cps.Prompts()
+            prompts.populate('', multi_path='', ext='')
+            mock_single_file.assert_called_with('')
+            mock_multi_files.assert_has_calls([])
+            mock_single_file.reset_mock()
 
         with mk.patch('setupam.corpus.os.path.exists', return_value=False):
-            cps.Prompts.create_prompts('', multi_path='')
-            mock_multi_prompts.assert_called_with('', 'txt')
-            mock_single_prompts.assert_has_calls([])
-            mock_multi_prompts.reset_mock()
+            prompts = cps.Prompts()
+            prompts.populate('', multi_path='')
+            mock_multi_files.assert_called_with('', 'txt')
+            mock_single_file.assert_has_calls([])
+            mock_multi_files.reset_mock()
 
 
 class SingleFilePromptsTest(unittest.TestCase):
     def setUp(self):
-        self.prompts = cps.SingleFilePrompts('')
+        self.prompts = cps.Prompts()
 
     def test_valid_single(self):
         data = "094    Vou tomar um pouquinho d'água. \n095 Para onde a senhora quer ir? \n" + \
@@ -275,23 +276,25 @@ class SingleFilePromptsTest(unittest.TestCase):
         exp_dict = {'094': "vou tomar um pouquinho d'água.", '095': 'para onde a senhora quer ir?',
                     '096': 'que horas são?', '097': 'amanhã é sexta.', '16': 'para onde a senhora quer ir?'}
 
-        with mk.patch('setupam.corpus.open', mk.mock_open(read_data=data), create=True):
-            self.prompts.populate()
-            self.assertEqual(self.prompts, exp_dict)
+        with mk.patch('setupam.corpus.os.path.exists', return_value=True):
+            with mk.patch('setupam.corpus.open', mk.mock_open(read_data=data), create=True):
+                self.prompts.populate('', multi_path='')
+                self.assertEqual(self.prompts, exp_dict)
 
     def test_invalid_single(self):
         data = "094   \nPara onde a senhora quer ir?\n096Que horas são?\n\n"
-        with mk.patch('setupam.corpus.open', mk.mock_open(read_data=data), create=True):
-            self.prompts.populate()
-            self.assertEqual(self.prompts, {})
+        with mk.patch('setupam.corpus.os.path.exists', return_value=True):
+            with mk.patch('setupam.corpus.open', mk.mock_open(read_data=data), create=True):
+                self.prompts.populate('', multi_path='')
+                self.assertEqual(self.prompts, {})
 
 
 class MultiFilePromptsTest(unittest.TestCase):
     @mk.patch('setupam.corpus.track_files', return_value=['/home/user/test.txt'])
     @mk.patch('setupam.corpus.open', mk.mock_open(read_data="Vou tomar um pouquinho d'água"), create=True)
     def test_multi(self, mock_track_files):
-        multi = cps.MultiFilePrompts('/home/user/', 'txt')
-        multi.populate()
+        multi = cps.Prompts()
+        multi.populate(multi_path='/home/user/')
         mock_track_files.assert_called_with('/home/user/', 'txt')
         self.assertTrue('test' in multi)
         self.assertEqual(multi['test'], "vou tomar um pouquinho d'água")
