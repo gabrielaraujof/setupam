@@ -47,20 +47,22 @@ class Corpus:
     AUDIO_DIR = 'wav'
     METADATA_DIR = 'etc'
 
+    TRAIN_SUFFIX = 'train'
+    TEST_SUFFIX = 'test'
+
     FILEID_EXT = 'fileids'
     TRANSCRIPT_EXT = 'transcription'
 
     SPEAKER_ID = id_generator()
     AUDIO_ID = id_generator()
 
-    def __init__(self, name, suffix, trg_path, src_path=None):
+    def __init__(self, name, trg_path, src_path=None):
         self.name = name
-        self.suffix = suffix
         self.target_path = trg_path
         self.src = src_path
         # Initialization
         self.speakers = []
-        self.trans_file = self.fileid_file = None
+        self.suffix = self.trans_file = self.fileid_file = None
 
     @property
     def corpus_path(self):
@@ -69,9 +71,9 @@ class Corpus:
     def set_up(self):
         self.create_folder(Corpus.AUDIO_DIR)
         self.create_folder(Corpus.METADATA_DIR)
-        trans_filename = self.format_filename(Corpus.TRANSCRIPT_EXT)
+        trans_filename = self.format_filename(self.suffix, Corpus.TRANSCRIPT_EXT)
         self.trans_file = TranscriptionWriter(os.path.join(self.corpus_path, Corpus.METADATA_DIR, trans_filename))
-        fileid_filename = self.format_filename(Corpus.FILEID_EXT)
+        fileid_filename = self.format_filename(self.suffix, Corpus.FILEID_EXT)
         self.fileid_file = FileidWriter(os.path.join(self.corpus_path, Corpus.METADATA_DIR, fileid_filename))
 
     def create_folder(self, folder_path, absolute=False):
@@ -96,8 +98,8 @@ class Corpus:
             print('I/O error(%s): %s %s' % (e.errno, e.strerror, e.filename))
             sys.exit(1)
 
-    def format_filename(self, ext):
-        return '{0}_{1}.{2}'.format(self.name, self.suffix, ext)
+    def format_filename(self, suffix, ext):
+        return '{0}_{1}.{2}'.format(self.name, suffix, ext)
 
     def add_speaker(self, speaker):
         self.speakers.append(speaker)
