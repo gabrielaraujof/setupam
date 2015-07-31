@@ -105,60 +105,11 @@ class SpkBuilderAudiosTest(unittest.TestCase):
         mock_audios.assert_has_calls(calls)
 
 
-class SpkBuilderPromptsTest(unittest.TestCase):
+class ResourceTest(unittest.TestCase):
+
     @staticmethod
     def get_calls(*args, **kwargs):
         return [mk.call(), mk.call().populate(*args, **kwargs)]
-
-    def setUp(self):
-        self.builder = cps.SpeakerBuilder(0, 'test')
-
-    def test_no_source_fails(self):
-        with self.assertRaisesRegex(TypeError, 'Missing arguments.*'):
-            self.builder.set_prompts()
-
-    @mk.patch('setupam.corpus.Prompts')
-    def test_no_source_only_one(self, mock_prompts):
-        self.builder.set_prompts('file1', 'file2')
-        calls = [mk.call(), mk.call().populate('file1', 'file2')]
-        mock_prompts.assert_has_calls(calls)
-        mock_prompts.reset_mock()
-        self.builder.set_prompts(multi='folder')
-        calls = [mk.call(), mk.call().populate(multi_path='folder')]
-        mock_prompts.assert_has_calls(calls)
-
-    @mk.patch('setupam.corpus.Prompts')
-    def test_no_source_both(self, mock_prompts):
-        self.builder.set_prompts('file1', 'file2', multi='folder')
-        calls = [mk.call(), mk.call().populate('file1', 'file2', multi_path='folder')]
-        mock_prompts.assert_has_calls(calls)
-
-    @mk.patch('setupam.corpus.Prompts')
-    def test_source_no_args(self, mock_prompts):
-        self.builder.relative_path = '/home'
-        self.builder.set_prompts()
-        paths = [path.join('/home', *args) for args in [('etc', 'prompts-original'), ('test.txt',)]]
-        calls = [mk.call(), mk.call().populate(*paths, multi_path='/home')]
-        mock_prompts.assert_has_calls(calls)
-
-    @mk.patch('setupam.corpus.Prompts')
-    def test_source_only_multi(self, mock_prompts):
-        def build_paths(*args):
-            file_list = list(args)
-            file_list.extend([('etc', 'prompts-original'), ('test.txt',)])
-            return [path.join('/home', *args) for args in file_list]
-
-        self.builder.relative_path = '/home'
-        self.builder.set_prompts(multi='folder')
-        multi_path = path.join('/home', 'folder')
-        mock_prompts.assert_has_calls(self.get_calls(*build_paths(), multi_path=multi_path))
-        mock_prompts.reset_mock()
-        self.builder.set_prompts('file1', multi='folder')
-        mock_prompts.assert_has_calls(self.get_calls(*build_paths(('file1', )), multi_path=multi_path))
-        mock_prompts.reset_mock()
-        self.builder.set_prompts('file1', 'file2')
-        calls = [mk.call(), mk.call().populate(*build_paths(('file1', ), ('file2',)), multi_path='/home')]
-        mock_prompts.assert_has_calls(calls)
 
 
 class SpkBuilderMetadataTest(unittest.TestCase):
