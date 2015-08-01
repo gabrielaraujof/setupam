@@ -125,7 +125,6 @@ class Corpus:
 
 
 class FileWriter:
-
     FORMAT = '{0}'
 
     def __init__(self, file_path):
@@ -147,7 +146,6 @@ class FileWriter:
 
 
 class TranscriptionWriter(FileWriter):
-
     FORMAT = '<s> {0} </s> ({1})'  # Prompt / Audio representation
     trans_regex = re.compile('\S*[,.?!]+\S*')
 
@@ -160,7 +158,6 @@ class TranscriptionWriter(FileWriter):
 
 
 class FileidWriter(FileWriter):
-
     FORMAT = '{0}/{1}'  # Speaker representation / Audio representation
 
     def __init__(self, target_file):
@@ -170,6 +167,7 @@ class FileidWriter(FileWriter):
 class Speaker:
     """Handle the tasks strictly related to speakers entities.
     """
+
     def __init__(self, id_number, name):
         self._id = id_number
         self.name = name
@@ -180,7 +178,6 @@ class Speaker:
 
 
 class SpeakerBuilder:
-
     def __init__(self, _id, name, source_path=None):
         self._speaker = Speaker(_id, name)
         self.relative_path = source_path
@@ -226,7 +223,7 @@ class SpeakerBuilder:
         self.speaker.prompts = prompts
 
     def set_metadata(self, **kwargs):
-        full_path = kwargs.get('path')
+        full_path = kwargs.get('full_path')
         if self.relative_path:
             if full_path:
                 full_path = os.path.join(self.relative_path, full_path)
@@ -277,7 +274,6 @@ class Audios(collections.UserList):
 
 
 class Metadata(collections.UserDict):
-
     DATA_PATTERNS = [
         ('USERNAME', r'(?<=User Name:).*(?=\n)'),
         ('GENDER', r'(?<=Gender:).*(?=\n)'),
