@@ -22,7 +22,7 @@ from unittest import mock as mk
 from os import path
 
 import setupam.corpus as cps
-from tests.unit.setupam.corpus_test import ResourceTest
+from tests.unit.setupam.builder_test.speaker_test import ResourceTest
 
 
 class RelativePathTest(ResourceTest):
@@ -64,7 +64,7 @@ class AbsolutePathTest(ResourceTest):
         self.builder = cps.SpeakerBuilder(0, 'test')
 
     def test_no_source_fails(self):
-        with self.assertRaisesRegex(TypeError, 'Missing arguments.*'):
+        with self.assertRaises(TypeError):
             self.builder.set_prompts()
 
     @mk.patch('setupam.corpus.Prompts')

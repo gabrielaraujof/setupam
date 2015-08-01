@@ -25,143 +25,11 @@ from os import path
 import setupam.corpus as cps
 
 
-def glob_side_effect():
-        yield []
-        yield ['']
-
-
 class CorpusTest(unittest.TestCase):
     @mk.patch('setupam.corpus.glob.glob')
     def test_track_files(self, mock_glob):
         cps.track_files('file_path', 'ext')
         mock_glob.assert_called_with(path.join('file_path', '*.ext'))
-
-
-class SpeakerTest(unittest.TestCase):
-    def setUp(self):
-        self.src_path = '/home/user/source'
-        self._id = 0
-        self.speaker = cps.Speaker(self._id, self.src_path)
-
-
-class SpkBuilderAudiosTest(unittest.TestCase):
-
-    def setUp(self):
-        self.builder = cps.SpeakerBuilder(0, 'test')
-
-    def test_no_source_fails(self):
-        with self.assertRaisesRegex(TypeError, 'Missing.*path list'):
-            self.builder.set_audios()
-        with self.assertRaisesRegex(TypeError, 'Missing.*path list'):
-            self.builder.set_audios(audio_format='')
-        with mk.patch('setupam.corpus.glob.glob', return_value=[]):
-            with self.assertRaisesRegex(ValueError, '.*invalid path list.*'):
-                self.builder.set_audios('x', 'y')
-
-    @mk.patch('setupam.corpus.Audios')
-    @mk.patch('setupam.corpus.glob.glob', side_effect=glob_side_effect())
-    def test_no_source_only_path(self, mock_glob, mock_audios):
-        self.builder.set_audios('/home', '/test')
-        calls = [mk.call(), mk.call().populate('/test', 'wav')]
-        mock_audios.assert_has_calls(calls)
-
-    @mk.patch('setupam.corpus.Audios')
-    @mk.patch('setupam.corpus.glob.glob', side_effect=glob_side_effect())
-    def test_no_source_both(self, mock_glob, mock_audios):
-        self.builder.set_audios('/home', '/test', audio_format='raw')
-        calls = [mk.call(), mk.call().populate('/test', 'raw')]
-        mock_audios.assert_has_calls(calls)
-
-    @mk.patch('setupam.corpus.Audios')
-    @mk.patch('setupam.corpus.glob.glob', return_value=[''])
-    def test_source_no_args(self, mock_glob, mock_audios):
-        self.builder.relative_path = '/home'
-        self.builder.set_audios()
-        calls = [mk.call(), mk.call().populate(path.join('/home', 'wav'), 'wav')]
-        mock_audios.assert_has_calls(calls)
-
-    @mk.patch('setupam.corpus.Audios')
-    @mk.patch('setupam.corpus.glob.glob', return_value=[''])
-    def test_source_only_path(self, mock_glob, mock_audios):
-        self.builder.relative_path = '/home'
-        self.builder.set_audios('test')
-        calls = [mk.call(), mk.call().populate(path.join('/home', 'test'), 'wav')]
-        mock_audios.assert_has_calls(calls)
-
-    @mk.patch('setupam.corpus.Audios')
-    @mk.patch('setupam.corpus.glob.glob', return_value=[''])
-    def test_source_only_format(self, mock_glob, mock_audios):
-        self.builder.relative_path = '/home'
-        self.builder.set_audios(audio_format='raw')
-        calls = [mk.call(), mk.call().populate(path.join('/home', 'wav'), 'raw')]
-        mock_audios.assert_has_calls(calls)
-
-    @mk.patch('setupam.corpus.Audios')
-    @mk.patch('setupam.corpus.glob.glob', side_effect=glob_side_effect())
-    def test_source_both(self, mock_glob, mock_audios):
-        self.builder.relative_path = '/home'
-        self.builder.set_audios('sub', 'test', audio_format='raw')
-        calls = [mk.call(), mk.call().populate(path.join('/home', 'test'), 'raw')]
-        mock_audios.assert_has_calls(calls)
-
-
-class ResourceTest(unittest.TestCase):
-
-    @staticmethod
-    def get_calls(*args, **kwargs):
-        return [mk.call(), mk.call().populate(*args, **kwargs)]
-
-
-class SpkBuilderMetadataTest(unittest.TestCase):
-
-    def setUp(self):
-        self.builder = cps.SpeakerBuilder(0, 'test')
-
-    def test_no_source_fails(self):
-        with self.assertRaisesRegex(TypeError, 'Missing.*path'):
-            self.builder.set_metadata()
-        with self.assertRaisesRegex(TypeError, 'Missing.*path'):
-            self.builder.set_metadata(regex='')
-
-    @mk.patch('setupam.corpus.Metadata')
-    def test_no_source_only_path(self, mock_metadata):
-        self.builder.set_metadata(path='test_path')
-        calls = [mk.call(), mk.call().populate('test_path')]
-        mock_metadata.assert_has_calls(calls)
-
-    @mk.patch('setupam.corpus.Metadata')
-    def test_no_source_both(self, mock_metadata):
-        self.builder.set_metadata(path='test_path', regex='test')
-        calls = [mk.call(), mk.call().populate('test_path', 'test')]
-        mock_metadata.assert_has_calls(calls)
-
-    @mk.patch('setupam.corpus.Metadata')
-    def test_source_no_args(self, mock_metadata):
-        self.builder.relative_path = '/home'
-        self.builder.set_metadata()
-        calls = [mk.call(), mk.call().populate(path.join('/home', 'etc', 'README'))]
-        mock_metadata.assert_has_calls(calls)
-
-    @mk.patch('setupam.corpus.Metadata')
-    def test_source_only_regex(self, mock_metadata):
-        self.builder.relative_path = '/home'
-        self.builder.set_metadata(regex='re_test')
-        calls = [mk.call(), mk.call().populate(path.join('/home', 'etc', 'README'), 're_test')]
-        mock_metadata.assert_has_calls(calls)
-
-    @mk.patch('setupam.corpus.Metadata')
-    def test_source_only_path(self, mock_metadata):
-        self.builder.relative_path = '/home'
-        self.builder.set_metadata(path='test_path')
-        calls = [mk.call(), mk.call().populate(path.join('/home', 'test_path'))]
-        mock_metadata.assert_has_calls(calls)
-
-    @mk.patch('setupam.corpus.Metadata')
-    def test_source_both(self, mock_metadata):
-        self.builder.relative_path = '/home'
-        self.builder.set_metadata(path='test_path', regex='test')
-        calls = [mk.call(), mk.call().populate(path.join('/home', 'test_path'), 'test')]
-        mock_metadata.assert_has_calls(calls)
 
 
 class FileWriterTest(unittest.TestCase):
@@ -259,6 +127,7 @@ class AudiosTest(unittest.TestCase):
             self.assertEqual(
                 tuple(self.audios),
                 (('001', 'wav', '/home/001.wav'), ('audio', 'raw', '/home/audio.raw'), ('file', 'mp3', 'file.mp3')))
+
 
 class MetadataTest(unittest.TestCase):
 
