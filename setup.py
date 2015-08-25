@@ -25,5 +25,5 @@ setup(
     entry_points={
         'console_scripts': ['setupam=setupam.cli:main'],
     },
-    description='Command-line tool to setup a speech corpus for CMU Sphinx.'
+    description='Command-line tool for setup a speech corpus for training an acoustic model for CMU Sphinx.'
 )
