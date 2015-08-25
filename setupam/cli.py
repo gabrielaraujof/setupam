@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 # Copyright (C) 2014  Gabriel F. Araujo
 
@@ -32,28 +32,24 @@ import logging
 import setupam.corpus as cp
 
 
-parser = argparse.ArgumentParser(description='Structure the voxforge speech corpus in the Sphinx-Train template.')
+def setup_log(log_level):
+    numeric_level = getattr(logging, log_level.upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError('Invalid log level: {}'.format(log_level))
+    logging.basicConfig(level=numeric_level, format='%(levelname)s: %(message)s')
 
-parser.add_argument('model', help='The name of your model to be set up.')
 
-parser.add_argument('-s', '--source', default='.', help='The source directory for the wav files.')
-
-parser.add_argument(
-    '-t', '--target', default='.', help='The target directory for setting up the acoustic model training.')
-
-parser.add_argument(
-    '-q', '--quota', default=0.1, type=float,
-    help="The percentage (float value) of speakers selected for the tests database. Default=0.1", metavar='Q')
-
-parser.add_argument('--log', default='INFO', help='Print the debug messages.', action="store_true")
-
-args = parser.parse_args()
-model, source, target, db_test_p, log_level = args.model, args.source, args.target, args.quota, args.log
-
-numeric_level = getattr(logging, log_level.upper(), None)
-if not isinstance(numeric_level, int):
-    raise ValueError('Invalid log level: {}'.format(log_level))
-logging.basicConfig(level=numeric_level, format='%(levelname)s: %(message)s')
+def get_parser():
+    parser = argparse.ArgumentParser(description='Structure the voxforge speech corpus in the Sphinx-Train template.')
+    parser.add_argument('model', help='The name of your model to be set up.')
+    parser.add_argument('-s', '--source', default='.', help='The source directory for the wav files.')
+    parser.add_argument(
+        '-t', '--target', default='.', help='The target directory for setting up the acoustic model training.')
+    parser.add_argument(
+        '-q', '--quota', default=0.1, type=float,
+        help="The percentage (float value) of speakers selected for the tests database. Default=0.1", metavar='Q')
+    parser.add_argument('--log', default='INFO', help='Print the debug messages.', action="store_true")
+    return parser
 
 
 def load_spk_content(corpus, spk_path_list):
@@ -64,7 +60,8 @@ def load_spk_content(corpus, spk_path_list):
         corpus.add_speaker(builder.speaker)
 
 
-if __name__ == '__main__':
+def build_corpus(log, quota, source, model, target):
+    setup_log(log)
 
     logging.info('Scanning for speaker directories...')
     os.chdir(source)
@@ -73,7 +70,7 @@ if __name__ == '__main__':
     logging.info("Found {} possible speaker's directories.".format(spk_count))
 
     # Compute the percentage of the tests base
-    spk_count_test = math.floor(db_test_p * spk_count)
+    spk_count_test = math.floor(quota * spk_count)
     if not spk_count_test:
         spk_count_test = 1
     spk_count_train = spk_count - spk_count_test
@@ -103,3 +100,7 @@ if __name__ == '__main__':
 
     logging.info('Done.')
 
+
+def main():
+    args = vars(get_parser().parse_args())
+    build_corpus(**args)
