@@ -2,7 +2,7 @@ SetupAM: A command-line tool for setup a speech corpus.
 -------------------------------------------------------
 
 .. image:: https://travis-ci.org/gabrielaraujof/setupam.svg
-    :alt: Build status
+   :alt: Build status
    :target: https://travis-ci.org/gabrielaraujof/setupam
 
 .. image:: https://coveralls.io/repos/gabrielaraujof/setupam/badge.svg?branch=master&service=github
