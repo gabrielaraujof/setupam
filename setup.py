@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name='setupam',
-    version='0.1.0',
+    version='0.1.1',
     packages=['setupam'],
     url='https://github.com/gabrielaraujof/setupam',
     license='GPL v2',
