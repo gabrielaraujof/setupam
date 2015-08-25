@@ -41,14 +41,14 @@ def setup_log(log_level):
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Structure the voxforge speech corpus in the Sphinx-Train template.')
-    parser.add_argument('model', help='The name of your model to be set up.')
     parser.add_argument('-s', '--source', default='.', help='The source directory for the wav files.')
     parser.add_argument(
         '-t', '--target', default='.', help='The target directory for setting up the acoustic model training.')
     parser.add_argument(
-        '-q', '--quota', default=0.1, type=float,
-        help="The percentage (float value) of speakers selected for the tests database. Default=0.1", metavar='Q')
-    parser.add_argument('--log', default='INFO', help='Print the debug messages.', action="store_true")
+        '-r', '--ratio', default=0.1, type=float,
+        help="The ratio of speakers selected for the train and tests base. Default to 10%.")
+    parser.add_argument('-l', '--log', default='INFO', help='Print the debug messages.')
+    parser.add_argument('model', help='The name of your model to be set up.')
     return parser
 
 
