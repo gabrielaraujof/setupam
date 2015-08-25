@@ -60,7 +60,7 @@ def load_spk_content(corpus, spk_path_list):
         corpus.add_speaker(builder.speaker)
 
 
-def build_corpus(log, quota, source, model, target):
+def build_corpus(log, ratio, source, model, target):
     setup_log(log)
 
     logging.info('Scanning for speaker directories...')
@@ -70,7 +70,7 @@ def build_corpus(log, quota, source, model, target):
     logging.info("Found {} possible speaker's directories.".format(spk_count))
 
     # Compute the percentage of the tests base
-    spk_count_test = math.floor(quota * spk_count)
+    spk_count_test = math.floor(ratio * spk_count)
     if not spk_count_test:
         spk_count_test = 1
     spk_count_train = spk_count - spk_count_test
