@@ -63,10 +63,18 @@ def load_spk_content(corpus, spk_path_list):
 def build_corpus(log, ratio, source, model, target):
     setup_log(log)
 
+    logging.info('Checking source directory.')
+    if not os.path.isabs(source):
+        source = os.path.abspath(source)
+    if not os.path.exists(source):
+        raise ValueError("The source directory {} doesn't exists.".format(source))
+
     logging.info('Scanning for speaker directories...')
-    os.chdir(source)
+    cwd = os.getcwd()
+    os.chdir(source)  # Changing working directory to source
     speakers_dir = [cur_path for cur_path in glob.glob('*') if os.path.isdir(cur_path)]
     spk_count = len(speakers_dir)
+    os.chdir(cwd)  # Returning to working directory
     logging.info("Found {} possible speaker's directories.".format(spk_count))
 
     # Compute the percentage of the tests base
