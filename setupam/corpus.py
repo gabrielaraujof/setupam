@@ -102,7 +102,11 @@ class Corpus:
         return '{0}_{1}.{2}'.format(self.name, suffix, ext)
 
     def add_speaker(self, speaker):
-        self.speakers.append(speaker)
+        if isinstance(speaker, Speaker):
+            self.speakers.append(speaker)
+            speaker._id = next(self.SPEAKER_ID)
+        else:
+            raise ValueError('Invalid speaker object. Given {}.'.format(speaker))
 
     def _store_files(self):
         self.trans_file.store()
@@ -114,7 +118,7 @@ class Corpus:
             spk_dir_path = self.create_folder(os.path.join(Corpus.AUDIO_DIR, spk_repr))
             for audio_name, audio_ext, audio_old_path in spk.audios:
                 if audio_name in spk.prompts:  # Has transcription?
-                    audio_repr = Corpus.format_audio_id(spk_repr, next(Corpus.AUDIO_ID))
+                    audio_repr = Corpus.format_audio_id(spk_repr, next(self.AUDIO_ID))
                     audio_new_path = os.path.join(spk_dir_path, '{}.{}'.format(audio_repr, audio_ext))
                     self._copy_audio(audio_old_path, audio_new_path)
                     # Include transcription
@@ -168,18 +172,21 @@ class Speaker:
     """Handle the tasks strictly related to speakers entities.
     """
 
-    def __init__(self, id_number, name):
-        self._id = id_number
+    def __init__(self, name):
+        self._id = None
         self.name = name
         self.metadata = self.prompts = self.audios = None
 
     def __str__(self):
-        return Corpus.format_speaker_id(self._id)
+        if self._id:
+            return Corpus.format_speaker_id(self._id)
+        else:
+            return super().__str__()
 
 
 class SpeakerBuilder:
-    def __init__(self, _id, name, source_path=None):
-        self._speaker = Speaker(_id, name)
+    def __init__(self, name, source_path=None):
+        self._speaker = Speaker(name)
         self.relative_path = source_path
 
     @property

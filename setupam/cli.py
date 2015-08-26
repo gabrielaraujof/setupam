@@ -54,7 +54,7 @@ def get_parser():
 
 def load_spk_content(corpus, spk_path_list):
     for spk_path in spk_path_list:
-        builder = cp.SpeakerBuilder(next(corpus.SPEAKER_ID), spk_path, os.path.join(corpus.src, spk_path))
+        builder = cp.SpeakerBuilder(spk_path, os.path.join(corpus.src, spk_path))
         builder.set_audios()
         builder.set_prompts()
         corpus.add_speaker(builder.speaker)

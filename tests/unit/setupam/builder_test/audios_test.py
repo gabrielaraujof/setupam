@@ -33,7 +33,7 @@ def glob_side_effect():
 class RelativePathTest(ResourceTest):
     def setUp(self):
         self.relative = '/home'
-        self.builder = cps.SpeakerBuilder(0, 'test', self.relative)
+        self.builder = cps.SpeakerBuilder('test', self.relative)
         self.args = ('test', 'raw', 'wav')
 
     @mk.patch('setupam.corpus.Audios')
@@ -63,7 +63,7 @@ class RelativePathTest(ResourceTest):
 
 class AbsolutePathTest(ResourceTest):
     def setUp(self):
-        self.builder = cps.SpeakerBuilder(0, 'test')
+        self.builder = cps.SpeakerBuilder('test')
         self.args = ('home', 'test', 'raw', 'wav')
 
     def test_fails(self):

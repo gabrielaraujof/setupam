@@ -29,7 +29,7 @@ class RelativePathTest(ResourceTest):
     def setUp(self):
         self.relative = '/home'
         self.kwargs = ({'multi_path': path.join('/home', 'folder')}, {'multi_path': self.relative})
-        self.builder = cps.SpeakerBuilder(0, 'test', self.relative)
+        self.builder = cps.SpeakerBuilder('test', self.relative)
 
     @staticmethod
     def build_paths(*args):
@@ -61,7 +61,7 @@ class RelativePathTest(ResourceTest):
 class AbsolutePathTest(ResourceTest):
     def setUp(self):
         self.kwargs = {'multi_path': 'folder'}
-        self.builder = cps.SpeakerBuilder(0, 'test')
+        self.builder = cps.SpeakerBuilder('test')
 
     def test_no_source_fails(self):
         with self.assertRaises(TypeError):

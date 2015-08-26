@@ -27,13 +27,12 @@ import setupam.corpus as cps
 class SpeakerTest(unittest.TestCase):
     def setUp(self):
         self.src_path = '/home/user/source'
-        self._id = 0
-        self.speaker = cps.Speaker(self._id, self.src_path)
+        self.speaker = cps.Speaker(self.src_path)
 
     @mk.patch('setupam.corpus.Corpus.format_speaker_id', return_value='')
     def test_str(self, mock_corpus):
         str(self.speaker)
-        mock_corpus.assert_called_with(self._id)
+        mock_corpus.assert_has_calls([])
 
 
 class ResourceTest(unittest.TestCase):

@@ -28,7 +28,7 @@ from tests.unit.setupam.builder_test.speaker_test import ResourceTest
 class RelativePathTest(ResourceTest):
     def setUp(self):
         self.relative = '/home'
-        self.builder = cps.SpeakerBuilder(0, 'test', self.relative)
+        self.builder = cps.SpeakerBuilder('test', self.relative)
         self.args = ('test_path', 're_test')
 
     @mk.patch('setupam.corpus.Metadata')
@@ -54,7 +54,7 @@ class RelativePathTest(ResourceTest):
 
 class AbsolutePathTest(ResourceTest):
     def setUp(self):
-        self.builder = cps.SpeakerBuilder(0, 'test')
+        self.builder = cps.SpeakerBuilder('test')
         self.args = ('test_path', 're_test')
 
     def test_fails(self):
