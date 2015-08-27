@@ -30,61 +30,35 @@ class RelativePathTest(MetadataTest):
 
     @classmethod
     def setUpClass(cls):
-        cls.base_path = '/home'
-        cls.args = ('test_path', 're_test')
-        cls.values = (
-            {
-                'args': (),
-                'kwargs': {},
-                'expected_calls': cls.create_calls((cls.base_path, 'etc', 'README'))
-            },
-            {
-                'args': (),
-                'kwargs': {'regex': cls.args[1]},
-                'expected_calls': cls.create_calls((cls.base_path, 'etc', 'README'), cls.args[1])
-            },
-            {
-                'args': (),
-                'kwargs': {'full_path': cls.args[0]},
-                'expected_calls': cls.create_calls((cls.base_path, cls.args[0]))
-            },
-            {
-                'args': (),
-                'kwargs': {'full_path': cls.args[0], 'regex': cls.args[1]},
-                'expected_calls': cls.create_calls((cls.base_path, cls.args[0]), cls.args[1])
-            }
+        cls.base_path = 'home'
+        cls.builder_args = ('test', cls.base_path), {}
+        cls.method_args = ('test_path', 're_test')
+        cls.assertion_values = (
+            {'args': (), 'kwargs': {},
+             'expected_calls': cls.create_calls((cls.base_path, 'etc', 'README'))},
+            {'args': (), 'kwargs': {'regex': cls.method_args[1]},
+             'expected_calls': cls.create_calls((cls.base_path, 'etc', 'README'), cls.method_args[1])},
+            {'args': (), 'kwargs': {'full_path': cls.method_args[0]},
+             'expected_calls': cls.create_calls((cls.base_path, cls.method_args[0]))},
+            {'args': (), 'kwargs': {'full_path': cls.method_args[0], 'regex': cls.method_args[1]},
+             'expected_calls': cls.create_calls((cls.base_path, cls.method_args[0]), cls.method_args[1])}
         )
-
-    def setUp(self):
-        super(RelativePathTest, self).setUp()
-        self.builder = setupam.speaker.SpeakerBuilder('test', self.base_path)
 
     def test_it(self):
         self.check_all_calls()
 
 
 class AbsolutePathTest(MetadataTest):
-
     @classmethod
     def setUpClass(cls):
-        cls.args = ('test_path', 're_test')
-        cls.values = (
-            {
-                'args': (),
-                'kwargs': {'full_path': cls.args[0]},
-                'expected_calls': cls.create_calls(cls.args[0])
-            },
-            {
-                'args': (),
-                'kwargs': {'full_path': cls.args[0], 'regex': cls.args[1]},
-                'expected_calls': cls.create_calls(cls.args[0], cls.args[1])
-            }
+        cls.builder_args = ('test',), {}
+        cls.method_args = ('test_path', 're_test')
+        cls.assertion_values = (
+            {'args': (), 'kwargs': {'full_path': cls.method_args[0]},
+             'expected_calls': cls.create_calls(cls.method_args[0])},
+            {'args': (), 'kwargs': {'full_path': cls.method_args[0], 'regex': cls.method_args[1]},
+             'expected_calls': cls.create_calls(cls.method_args[0], cls.method_args[1])}
         )
-
-    def setUp(self):
-        super(AbsolutePathTest, self).setUp()
-        self.builder = setupam.speaker.SpeakerBuilder('test')
-        self.args = ('test_path', 're_test')
 
     def test_fails(self):
         with self.assertRaises(TypeError):

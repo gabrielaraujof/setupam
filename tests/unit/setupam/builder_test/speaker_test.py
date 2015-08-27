@@ -36,6 +36,8 @@ class ResourceTest(unittest.TestCase):
         patcher = mk.patch('{}.{}'.format(self.module_to_patch.__name__, self.class_to_patch.__name__))
         self.addCleanup(patcher.stop)
         self.mock = patcher.start()
+        args, kwargs = self.builder_args
+        self.builder = setupam.speaker.SpeakerBuilder(*args, **kwargs)
 
     def check_call(self, args, kwargs, expected_calls):
         func = getattr(self.builder, self.method_under_test.__name__)
@@ -43,7 +45,7 @@ class ResourceTest(unittest.TestCase):
         self.mock.assert_has_calls(expected_calls)
 
     def check_all_calls(self):
-        for value in self.values:
+        for value in self.assertion_values:
             self.check_call(**value)
 
     @staticmethod
