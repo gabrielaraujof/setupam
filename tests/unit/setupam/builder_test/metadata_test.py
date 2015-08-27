@@ -16,59 +16,69 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-from unittest import mock as mk
-
 from tests.unit.setupam.builder_test.speaker_test import ResourceTest
 import setupam.speaker
 
 
 class MetadataTest(ResourceTest):
-    def setUp(self):
-        metadata_patcher = mk.patch('setupam.speaker.Metadata')
-        self.addCleanup(metadata_patcher.stop)
-        self.mock_metadata = metadata_patcher.start()
+    module_to_patch = setupam.speaker
+    class_to_patch = setupam.speaker.Metadata
+    method_under_test = setupam.speaker.SpeakerBuilder.set_metadata
 
 
 class RelativePathTest(MetadataTest):
+
     @classmethod
     def setUpClass(cls):
         cls.base_path = '/home'
         cls.args = ('test_path', 're_test')
-        cls.calls = (
-            cls.create_calls((cls.base_path, 'etc', 'README')),
-            cls.create_calls((cls.base_path, 'etc', 'README'), cls.args[1]),
-            cls.create_calls((cls.base_path, cls.args[0])),
-            cls.create_calls((cls.base_path, cls.args[0]), cls.args[1])
+        cls.values = (
+            {
+                'args': (),
+                'kwargs': {},
+                'expected_calls': cls.create_calls((cls.base_path, 'etc', 'README'))
+            },
+            {
+                'args': (),
+                'kwargs': {'regex': cls.args[1]},
+                'expected_calls': cls.create_calls((cls.base_path, 'etc', 'README'), cls.args[1])
+            },
+            {
+                'args': (),
+                'kwargs': {'full_path': cls.args[0]},
+                'expected_calls': cls.create_calls((cls.base_path, cls.args[0]))
+            },
+            {
+                'args': (),
+                'kwargs': {'full_path': cls.args[0], 'regex': cls.args[1]},
+                'expected_calls': cls.create_calls((cls.base_path, cls.args[0]), cls.args[1])
+            }
         )
 
     def setUp(self):
         super(RelativePathTest, self).setUp()
         self.builder = setupam.speaker.SpeakerBuilder('test', self.base_path)
 
-    def test_no_args(self):
-        self.builder.set_metadata()
-        self.mock_metadata.assert_has_calls(self.calls[0])
-
-    def test_regex(self):
-        self.builder.set_metadata(regex=self.args[1])
-        self.mock_metadata.assert_has_calls(self.calls[1])
-
-    def test_only_path(self):
-        self.builder.set_metadata(full_path=self.args[0])
-        self.mock_metadata.assert_has_calls(self.calls[2])
-
-    def test_both(self):
-        self.builder.set_metadata(full_path=self.args[0], regex=self.args[1])
-        self.mock_metadata.assert_has_calls(self.calls[3])
+    def test_it(self):
+        self.check_all_calls()
 
 
 class AbsolutePathTest(MetadataTest):
+
     @classmethod
     def setUpClass(cls):
         cls.args = ('test_path', 're_test')
-        cls.calls = (
-            cls.create_calls(cls.args[0]),
-            cls.create_calls(cls.args[0], cls.args[1]),
+        cls.values = (
+            {
+                'args': (),
+                'kwargs': {'full_path': cls.args[0]},
+                'expected_calls': cls.create_calls(cls.args[0])
+            },
+            {
+                'args': (),
+                'kwargs': {'full_path': cls.args[0], 'regex': cls.args[1]},
+                'expected_calls': cls.create_calls(cls.args[0], cls.args[1])
+            }
         )
 
     def setUp(self):
@@ -84,10 +94,5 @@ class AbsolutePathTest(MetadataTest):
         with self.assertRaises(TypeError):
             self.builder.set_metadata('something', 'another_thing')
 
-    def test_only_path(self):
-        self.builder.set_metadata(full_path=self.args[0])
-        self.mock_metadata.assert_has_calls(self.calls[0])
-
-    def test_no_source_both(self):
-        self.builder.set_metadata(full_path=self.args[0], regex=self.args[1])
-        self.mock_metadata.assert_has_calls(self.calls[1])
+    def test_it(self):
+        self.check_all_calls()

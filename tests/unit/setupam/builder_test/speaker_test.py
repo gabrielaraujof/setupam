@@ -32,6 +32,19 @@ class SpeakerTest(unittest.TestCase):
 
 
 class ResourceTest(unittest.TestCase):
+    def setUp(self):
+        patcher = mk.patch('{}.{}'.format(self.module_to_patch.__name__, self.class_to_patch.__name__))
+        self.addCleanup(patcher.stop)
+        self.mock = patcher.start()
+
+    def check_call(self, args, kwargs, expected_calls):
+        func = getattr(self.builder, self.method_under_test.__name__)
+        func(*args, **kwargs)
+        self.mock.assert_has_calls(expected_calls)
+
+    def check_all_calls(self):
+        for value in self.values:
+            self.check_call(**value)
 
     @staticmethod
     def create_calls(*args, **kwargs):
