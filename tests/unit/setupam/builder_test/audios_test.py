@@ -15,54 +15,54 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-import setupam.speaker
-
-__author__ = 'Gabriel Araujo'
 
 from unittest import mock as mk
 from os import path
 
 from tests.unit.setupam.builder_test.speaker_test import ResourceTest
+import setupam.speaker
 
 
-def glob_side_effect():
-    yield []
-    yield ['']
-
-
-class RelativePathTest(ResourceTest):
+class AudiosTest(ResourceTest):
     def setUp(self):
+        audios_patcher = mk.patch('setupam.speaker.Audios')
+        glob_patcher = mk.patch('setupam.speaker.glob.glob', return_value=[''])
+        self.addCleanup(audios_patcher.stop)
+        self.addCleanup(glob_patcher.stop)
+        self.mock_audios = audios_patcher.start()
+        self.mock_glob = glob_patcher.start()
+
+
+class RelativePathTest(AudiosTest):
+    def setUp(self):
+        super(RelativePathTest, self).setUp()
         self.relative = '/home'
         self.builder = setupam.speaker.SpeakerBuilder('test', self.relative)
         self.args = ('test', 'raw', 'wav')
 
-    @mk.patch('setupam.speaker.Audios')
-    @mk.patch('setupam.speaker.glob.glob', return_value=[''])
-    def test_no_args(self, mock_glob, mock_audios):
+    def test_no_args(self):
         self.builder.set_audios()
-        mock_audios.assert_has_calls(self.get_calls(path.join('/home', 'wav'), 'wav'))
+        self.mock_audios.assert_has_calls(self.get_calls(path.join('/home', 'wav'), 'wav'))
 
-    @mk.patch('setupam.speaker.Audios')
-    @mk.patch('setupam.speaker.glob.glob', return_value=[''])
-    def test_only_path(self, mock_glob, mock_audios):
+    def test_only_path(self):
         self.builder.set_audios(self.args[0])
-        mock_audios.assert_has_calls(self.get_calls(path.join('/home', self.args[0]), self.args[2]))
+        self.mock_audios.assert_has_calls(self.get_calls(path.join('/home', self.args[0]), self.args[2]))
 
-    @mk.patch('setupam.speaker.Audios')
-    @mk.patch('setupam.speaker.glob.glob', return_value=[''])
-    def test_only_format(self, mock_glob, mock_audios):
+    def test_only_format(self):
         self.builder.set_audios(audio_format=self.args[1])
-        mock_audios.assert_has_calls(self.get_calls(path.join('/home', self.args[2]), self.args[1]))
+        self.mock_audios.assert_has_calls(self.get_calls(path.join('/home', self.args[2]), self.args[1]))
 
-    @mk.patch('setupam.speaker.Audios')
-    @mk.patch('setupam.speaker.glob.glob', side_effect=glob_side_effect())
-    def test_both(self, mock_glob, mock_audios):
+    def test_both(self):
+        # For this test we want to force a situation where the first path doesn't return anything
+        self.mock_glob.side_effect = (content for content in ([], ['']))
         self.builder.set_audios('sub', self.args[0], audio_format=self.args[1])
-        mock_audios.assert_has_calls(self.get_calls(path.join('/home', self.args[0]), self.args[1]))
+        self.mock_audios.assert_has_calls(self.get_calls(path.join('/home', self.args[0]), self.args[1]))
 
 
-class AbsolutePathTest(ResourceTest):
+class AbsolutePathTest(AudiosTest):
     def setUp(self):
+        super(AbsolutePathTest, self).setUp()
+        self.mock_glob.side_effect = (content for content in ([], ['']))
         self.builder = setupam.speaker.SpeakerBuilder('test')
         self.args = ('home', 'test', 'raw', 'wav')
 
@@ -75,14 +75,10 @@ class AbsolutePathTest(ResourceTest):
             with self.assertRaises(ValueError):
                 self.builder.set_audios('x', 'y')
 
-    @mk.patch('setupam.speaker.Audios')
-    @mk.patch('setupam.speaker.glob.glob', side_effect=glob_side_effect())
-    def test_only_path(self, mock_glob, mock_audios):
+    def test_only_path(self):
         self.builder.set_audios(*self.args[:2])
-        mock_audios.assert_has_calls(self.get_calls(self.args[1], self.args[3]))
+        self.mock_audios.assert_has_calls(self.get_calls(self.args[1], self.args[3]))
 
-    @mk.patch('setupam.speaker.Audios')
-    @mk.patch('setupam.speaker.glob.glob', side_effect=glob_side_effect())
-    def test_both(self, mock_glob, mock_audios):
+    def test_both(self):
         self.builder.set_audios(*self.args[:2], audio_format=self.args[2])
-        mock_audios.assert_has_calls(self.get_calls(*self.args[1:3]))
+        self.mock_audios.assert_has_calls(self.get_calls(*self.args[1:3]))

@@ -15,12 +15,11 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-import setupam.speaker
-
-__author__ = 'Gabriel Araujo'
 
 import unittest
 import unittest.mock as mk
+
+import setupam.speaker
 
 
 class SpeakerTest(unittest.TestCase):
@@ -28,10 +27,7 @@ class SpeakerTest(unittest.TestCase):
         self.src_path = '/home/user/source'
         self.speaker = setupam.speaker.Speaker(self.src_path)
 
-    @mk.patch('setupam.corpus.Corpus.format_speaker_id', return_value='')
-    def test_str(self, mock_corpus):
-        str(self.speaker)
-        mock_corpus.assert_has_calls([])
+        # TODO Will include tests for speaker class when it's extended.
 
 
 class ResourceTest(unittest.TestCase):

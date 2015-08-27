@@ -15,18 +15,24 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-import setupam.speaker
-
-__author__ = 'Gabriel Araujo'
 
 from unittest import mock as mk
 from os import path
 
 from tests.unit.setupam.builder_test.speaker_test import ResourceTest
+import setupam.speaker
 
 
-class RelativePathTest(ResourceTest):
+class PromptsTest(ResourceTest):
     def setUp(self):
+        prompts_patcher = mk.patch('setupam.speaker.Prompts')
+        self.addCleanup(prompts_patcher.stop)
+        self.mock_prompts = prompts_patcher.start()
+
+
+class RelativePathTest(PromptsTest):
+    def setUp(self):
+        super(RelativePathTest, self).setUp()
         self.relative = '/home'
         self.kwargs = ({'multi_path': path.join('/home', 'folder')}, {'multi_path': self.relative})
         self.builder = setupam.speaker.SpeakerBuilder('test', self.relative)
@@ -37,29 +43,26 @@ class RelativePathTest(ResourceTest):
         file_list.extend([('etc', 'prompts-original'), ('test.txt',)])
         return [path.join('/home', *args) for args in file_list]
 
-    @mk.patch('setupam.speaker.Prompts')
-    def test_multi(self, mock_prompts):
+    def test_multi(self):
         self.builder.set_prompts(multi='folder')
-        mock_prompts.assert_has_calls(self.get_calls(*self.build_paths(), **self.kwargs[0]))
+        self.mock_prompts.assert_has_calls(self.get_calls(*self.build_paths(), **self.kwargs[0]))
 
-    @mk.patch('setupam.speaker.Prompts')
-    def test_both(self, mock_prompts):
+    def test_both(self):
         self.builder.set_prompts('file1', multi='folder')
-        mock_prompts.assert_has_calls(self.get_calls(*self.build_paths('file1'), **self.kwargs[0]))
+        self.mock_prompts.assert_has_calls(self.get_calls(*self.build_paths('file1'), **self.kwargs[0]))
 
-    @mk.patch('setupam.speaker.Prompts')
-    def test_single(self, mock_prompts):
+    def test_single(self):
         self.builder.set_prompts('file1', 'file2')
-        mock_prompts.assert_has_calls(self.get_calls(*self.build_paths('file1', 'file2'), **self.kwargs[1]))
+        self.mock_prompts.assert_has_calls(self.get_calls(*self.build_paths('file1', 'file2'), **self.kwargs[1]))
 
-    @mk.patch('setupam.speaker.Prompts')
-    def test_no_args(self, mock_prompts):
+    def test_no_args(self):
         self.builder.set_prompts()
-        mock_prompts.assert_has_calls(self.get_calls(*self.build_paths(), **self.kwargs[1]))
+        self.mock_prompts.assert_has_calls(self.get_calls(*self.build_paths(), **self.kwargs[1]))
 
 
-class AbsolutePathTest(ResourceTest):
+class AbsolutePathTest(PromptsTest):
     def setUp(self):
+        super(AbsolutePathTest, self).setUp()
         self.kwargs = {'multi_path': 'folder'}
         self.builder = setupam.speaker.SpeakerBuilder('test')
 
@@ -67,17 +70,14 @@ class AbsolutePathTest(ResourceTest):
         with self.assertRaises(TypeError):
             self.builder.set_prompts()
 
-    @mk.patch('setupam.speaker.Prompts')
-    def test_no_source_only_one(self, mock_prompts):
+    def test_no_source_only_one(self):
         self.builder.set_prompts('file1', 'file2')
-        mock_prompts.assert_has_calls(self.get_calls('file1', 'file2'))
+        self.mock_prompts.assert_has_calls(self.get_calls('file1', 'file2'))
 
-    @mk.patch('setupam.speaker.Prompts')
-    def test_no_source_only_one2(self, mock_prompts):
+    def test_no_source_only_one2(self):
         self.builder.set_prompts(multi='folder')
-        mock_prompts.assert_has_calls(self.get_calls(**self.kwargs))
+        self.mock_prompts.assert_has_calls(self.get_calls(**self.kwargs))
 
-    @mk.patch('setupam.speaker.Prompts')
-    def test_no_source_both(self, mock_prompts):
+    def test_no_source_both(self):
         self.builder.set_prompts('file1', 'file2', multi='folder')
-        mock_prompts.assert_has_calls(self.get_calls('file1', 'file2', **self.kwargs))
+        self.mock_prompts.assert_has_calls(self.get_calls('file1', 'file2', **self.kwargs))
