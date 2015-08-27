@@ -17,7 +17,6 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 from unittest import mock as mk
-from os import path
 
 from tests.unit.setupam.builder_test.speaker_test import ResourceTest
 import setupam.speaker
@@ -31,30 +30,47 @@ class MetadataTest(ResourceTest):
 
 
 class RelativePathTest(MetadataTest):
+    @classmethod
+    def setUpClass(cls):
+        cls.base_path = '/home'
+        cls.args = ('test_path', 're_test')
+        cls.calls = (
+            cls.create_calls((cls.base_path, 'etc', 'README')),
+            cls.create_calls((cls.base_path, 'etc', 'README'), cls.args[1]),
+            cls.create_calls((cls.base_path, cls.args[0])),
+            cls.create_calls((cls.base_path, cls.args[0]), cls.args[1])
+        )
+
     def setUp(self):
         super(RelativePathTest, self).setUp()
-        self.relative = '/home'
-        self.builder = setupam.speaker.SpeakerBuilder('test', self.relative)
-        self.args = ('test_path', 're_test')
+        self.builder = setupam.speaker.SpeakerBuilder('test', self.base_path)
 
     def test_no_args(self):
         self.builder.set_metadata()
-        self.mock_metadata.assert_has_calls(self.get_calls(path.join(self.relative, 'etc', 'README')))
+        self.mock_metadata.assert_has_calls(self.calls[0])
 
     def test_regex(self):
         self.builder.set_metadata(regex=self.args[1])
-        self.mock_metadata.assert_has_calls(self.get_calls(path.join(self.relative, 'etc', 'README'), self.args[1]))
+        self.mock_metadata.assert_has_calls(self.calls[1])
 
     def test_only_path(self):
         self.builder.set_metadata(full_path=self.args[0])
-        self.mock_metadata.assert_has_calls(self.get_calls(path.join(self.relative, self.args[0])))
+        self.mock_metadata.assert_has_calls(self.calls[2])
 
     def test_both(self):
         self.builder.set_metadata(full_path=self.args[0], regex=self.args[1])
-        self.mock_metadata.assert_has_calls(self.get_calls(path.join(self.relative, self.args[0]), self.args[1]))
+        self.mock_metadata.assert_has_calls(self.calls[3])
 
 
 class AbsolutePathTest(MetadataTest):
+    @classmethod
+    def setUpClass(cls):
+        cls.args = ('test_path', 're_test')
+        cls.calls = (
+            cls.create_calls(cls.args[0]),
+            cls.create_calls(cls.args[0], cls.args[1]),
+        )
+
     def setUp(self):
         super(AbsolutePathTest, self).setUp()
         self.builder = setupam.speaker.SpeakerBuilder('test')
@@ -70,8 +86,8 @@ class AbsolutePathTest(MetadataTest):
 
     def test_only_path(self):
         self.builder.set_metadata(full_path=self.args[0])
-        self.mock_metadata.assert_has_calls(self.get_calls('test_path'))
+        self.mock_metadata.assert_has_calls(self.calls[0])
 
     def test_no_source_both(self):
         self.builder.set_metadata(full_path=self.args[0], regex=self.args[1])
-        self.mock_metadata.assert_has_calls(self.get_calls(*self.args))
+        self.mock_metadata.assert_has_calls(self.calls[1])

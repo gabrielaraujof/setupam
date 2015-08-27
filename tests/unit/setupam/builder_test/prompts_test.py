@@ -31,39 +31,57 @@ class PromptsTest(ResourceTest):
 
 
 class RelativePathTest(PromptsTest):
-    def setUp(self):
-        super(RelativePathTest, self).setUp()
-        self.relative = '/home'
-        self.kwargs = ({'multi_path': path.join('/home', 'folder')}, {'multi_path': self.relative})
-        self.builder = setupam.speaker.SpeakerBuilder('test', self.relative)
+    @classmethod
+    def setUpClass(cls):
+        cls.relative = 'home'
+        cls.kwargs = ({'multi_path': path.join('home', 'folder')}, {'multi_path': cls.relative})
+        cls.calls = (
+            cls.create_calls(*cls.build_paths(), **cls.kwargs[0]),
+            cls.create_calls(*cls.build_paths('file1'), **cls.kwargs[0]),
+            cls.create_calls(*cls.build_paths('file1', 'file2'), **cls.kwargs[1]),
+            cls.create_calls(*cls.build_paths(), **cls.kwargs[1]),
+        )
 
     @staticmethod
     def build_paths(*args):
         file_list = [(file,) for file in args]
         file_list.extend([('etc', 'prompts-original'), ('test.txt',)])
-        return [path.join('/home', *args) for args in file_list]
+        return [path.join('home', *args) for args in file_list]
+
+    def setUp(self):
+        super(RelativePathTest, self).setUp()
+        self.builder = setupam.speaker.SpeakerBuilder('test', self.relative)
 
     def test_multi(self):
         self.builder.set_prompts(multi='folder')
-        self.mock_prompts.assert_has_calls(self.get_calls(*self.build_paths(), **self.kwargs[0]))
+        self.mock_prompts.assert_has_calls(self.calls[0])
 
     def test_both(self):
         self.builder.set_prompts('file1', multi='folder')
-        self.mock_prompts.assert_has_calls(self.get_calls(*self.build_paths('file1'), **self.kwargs[0]))
+        self.mock_prompts.assert_has_calls(self.calls[1])
 
     def test_single(self):
         self.builder.set_prompts('file1', 'file2')
-        self.mock_prompts.assert_has_calls(self.get_calls(*self.build_paths('file1', 'file2'), **self.kwargs[1]))
+        self.mock_prompts.assert_has_calls(self.calls[2])
 
     def test_no_args(self):
         self.builder.set_prompts()
-        self.mock_prompts.assert_has_calls(self.get_calls(*self.build_paths(), **self.kwargs[1]))
+        self.mock_prompts.assert_has_calls(self.calls[3])
 
 
 class AbsolutePathTest(PromptsTest):
+    @classmethod
+    def setUpClass(cls):
+        cls.args = ('file1', 'file2')
+        cls.kwargs = {'multi_path': 'folder'}
+        cls.calls = (
+            cls.create_calls((cls.args[0],), (cls.args[1],)),
+            cls.create_calls(**cls.kwargs),
+            cls.create_calls(*cls.args, **cls.kwargs)
+        )
+
     def setUp(self):
         super(AbsolutePathTest, self).setUp()
-        self.kwargs = {'multi_path': 'folder'}
         self.builder = setupam.speaker.SpeakerBuilder('test')
 
     def test_no_source_fails(self):
@@ -72,12 +90,12 @@ class AbsolutePathTest(PromptsTest):
 
     def test_no_source_only_one(self):
         self.builder.set_prompts('file1', 'file2')
-        self.mock_prompts.assert_has_calls(self.get_calls('file1', 'file2'))
+        self.mock_prompts.assert_has_calls(self.calls[0])
 
     def test_no_source_only_one2(self):
         self.builder.set_prompts(multi='folder')
-        self.mock_prompts.assert_has_calls(self.get_calls(**self.kwargs))
+        self.mock_prompts.assert_has_calls(self.calls[1])
 
     def test_no_source_both(self):
         self.builder.set_prompts('file1', 'file2', multi='folder')
-        self.mock_prompts.assert_has_calls(self.get_calls('file1', 'file2', **self.kwargs))
+        self.mock_prompts.assert_has_calls(self.calls[2])

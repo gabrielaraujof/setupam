@@ -18,6 +18,7 @@
 
 import unittest
 import unittest.mock as mk
+from os import path
 
 import setupam.speaker
 
@@ -31,6 +32,11 @@ class SpeakerTest(unittest.TestCase):
 
 
 class ResourceTest(unittest.TestCase):
+
     @staticmethod
-    def get_calls(*args, **kwargs):
-        return [mk.call(), mk.call().populate(*args, **kwargs)]
+    def create_calls(*args, **kwargs):
+        # Create proper paths from args
+        paths = (path.join(*arg) if isinstance(arg, tuple) else arg for arg in args)
+        # Create the calls object with the paths given
+        calls = [mk.call(), mk.call().populate(*paths, **kwargs)]
+        return calls
