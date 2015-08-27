@@ -41,14 +41,14 @@ class RelativePathTest(AudiosTest):
         cls.base_path = 'home'
         cls.builder_args = ('test', cls.base_path), {}
         cls.args = 'home', 'wav'
-        cls.shared_args = (cls.args[0], cls.args[1]), cls.args[1]
+        cls.shared_args = ((cls.args[0], cls.args[1]), cls.args[1]), ((cls.args[0], cls.args[0]), cls.args[1])
         cls.assertion_values = (
             {'args': (), 'kwargs': {},
-             'expected_calls': cls.create_calls(*cls.shared_args)},
+             'expected_calls': cls.create_calls(*cls.shared_args[0])},
             {'args': (), 'kwargs': {'audio_format': cls.args[1]},
-             'expected_calls': cls.create_calls(*cls.shared_args)},
+             'expected_calls': cls.create_calls(*cls.shared_args[0])},
             {'args': (cls.args[0],), 'kwargs': {},
-             'expected_calls': cls.create_calls(*cls.shared_args)},
+             'expected_calls': cls.create_calls(*cls.shared_args[1])},
         )
 
     def test_it(self):
@@ -59,7 +59,7 @@ class RelativePathTest(AudiosTest):
         self.mock_glob.side_effect = (content for content in ([], ['']))
         args = {
             'args': ('sub', self.args[0]), 'kwargs': {'audio_format': self.args[1]},
-            'expected_calls': self.create_calls(*self.shared_args)}
+            'expected_calls': self.create_calls(*self.shared_args[1])}
         self.check_call(**args)
 
 
