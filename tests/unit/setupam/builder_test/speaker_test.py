@@ -15,19 +15,18 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+import setupam.speaker
 
 __author__ = 'Gabriel Araujo'
 
 import unittest
 import unittest.mock as mk
 
-import setupam.corpus as cps
-
 
 class SpeakerTest(unittest.TestCase):
     def setUp(self):
         self.src_path = '/home/user/source'
-        self.speaker = cps.Speaker(self.src_path)
+        self.speaker = setupam.speaker.Speaker(self.src_path)
 
     @mk.patch('setupam.corpus.Corpus.format_speaker_id', return_value='')
     def test_str(self, mock_corpus):
