@@ -16,12 +16,6 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-__author__ = "Gabriel Araujo"
-__copyright__ = "Copyright 2014"
-__license__ = "GPL"
-__version__ = "0.1"
-__maintainer__ = "Gabriel Araujo"
-
 import argparse
 import os
 import glob
@@ -29,7 +23,8 @@ import math
 import random
 import logging
 
-import setupam.corpus as cp
+import setupam.corpus
+import setupam.speaker
 
 
 def setup_log(log_level):
@@ -54,7 +49,7 @@ def get_parser():
 
 def load_spk_content(corpus, spk_path_list):
     for spk_path in spk_path_list:
-        builder = cp.SpeakerBuilder(spk_path, os.path.join(corpus.src, spk_path))
+        builder = setupam.speaker.SpeakerBuilder(spk_path, os.path.join(corpus.src, spk_path))
         builder.set_audios()
         builder.set_prompts()
         corpus.add_speaker(builder.speaker)
@@ -87,8 +82,8 @@ def build_corpus(log, ratio, source, model, target):
     )
     random.shuffle(speakers_dir)  # Choose speakers randomly
 
-    train_corpus = cp.Corpus(model, target, src_path=source)
-    train_corpus.suffix = cp.Corpus.TRAIN_SUFFIX
+    train_corpus = setupam.corpus.Corpus(model, target, src_path=source)
+    train_corpus.suffix = setupam.corpus.Corpus.TRAIN_SUFFIX
     logging.info('Setting up the training corpus...')
     train_corpus.set_up()
 
@@ -97,8 +92,8 @@ def build_corpus(log, ratio, source, model, target):
     logging.info('Building train corpus...')
     train_corpus.compile_corpus()
 
-    test_corpus = cp.Corpus(model, target, src_path=source)
-    test_corpus.suffix = cp.Corpus.TEST_SUFFIX
+    test_corpus = setupam.corpus.Corpus(model, target, src_path=source)
+    test_corpus.suffix = setupam.corpus.Corpus.TEST_SUFFIX
     logging.info('Setting up the test corpus...')
     test_corpus.set_up()
     logging.info("Loading speakers' content...")
