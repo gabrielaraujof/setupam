@@ -23,55 +23,57 @@ import setupam.speaker
 
 
 class AudiosTest(ResourceTest):
+    module_to_patch = setupam.speaker
+    class_to_patch = setupam.speaker.Audios
+    method_under_test = setupam.speaker.SpeakerBuilder.set_audios
+
     def setUp(self):
-        audios_patcher = mk.patch('setupam.speaker.Audios')
-        glob_patcher = mk.patch('setupam.speaker.glob.glob', return_value=[''])
-        self.addCleanup(audios_patcher.stop)
+        super(AudiosTest, self).setUp()
+        glob_patcher = mk.patch('{}.{}'.format(self.module_to_patch.__name__, 'glob.glob'), return_value=[''])
         self.addCleanup(glob_patcher.stop)
-        self.mock_audios = audios_patcher.start()
         self.mock_glob = glob_patcher.start()
 
 
 class RelativePathTest(AudiosTest):
+
     @classmethod
     def setUpClass(cls):
-        cls.args = ('home', 'wav')
-        cls.calls = (
-            cls.create_calls((cls.args[0], cls.args[1]), cls.args[1]),
-            cls.create_calls((cls.args[0], cls.args[0]), cls.args[1])
+        cls.base_path = 'home'
+        cls.builder_args = ('test', cls.base_path), {}
+        cls.args = 'home', 'wav'
+        cls.assertion_values = (
+            {'args': (), 'kwargs': {},
+             'expected_calls': cls.create_calls((cls.args[0], cls.args[1]), cls.args[1])},
+            {'args': (), 'kwargs': {'audio_format': cls.args[1]},
+             'expected_calls': cls.create_calls((cls.args[0], cls.args[1]), cls.args[1])},
+            {'args': (cls.args[0],), 'kwargs': {},
+             'expected_calls': cls.create_calls((cls.args[0], cls.args[0]), cls.args[1])},
         )
 
-    def setUp(self):
-        super(RelativePathTest, self).setUp()
-        self.builder = setupam.speaker.SpeakerBuilder('test', self.args[0])
-
-    def test_no_args(self):
-        self.builder.set_audios()
-        self.mock_audios.assert_has_calls(self.calls[0])
-        self.mock_audios.reset_mock()
-        self.builder.set_audios(audio_format=self.args[1])
-        self.mock_audios.assert_has_calls(self.calls[0])
+    def test_it(self):
+        self.check_all_calls()
 
     def test_only_path(self):
-        self.builder.set_audios(self.args[0])
-        self.mock_audios.assert_has_calls(self.calls[1])
-        self.mock_audios.reset_mock()
         # For this test we want to force a situation where the first path doesn't return anything
         self.mock_glob.side_effect = (content for content in ([], ['']))
-        self.builder.set_audios('sub', self.args[0], audio_format=self.args[1])
-        self.mock_audios.assert_has_calls(self.calls[1])
+        args = {
+            'args': ('sub', self.args[0]), 'kwargs': {'audio_format': self.args[1]},
+            'expected_calls': self.create_calls((self.args[0], self.args[0]), self.args[1])}
+        self.check_call(**args)
 
 
 class AbsolutePathTest(AudiosTest):
+
     @classmethod
     def setUpClass(cls):
-        cls.args = ('home', 'test', 'wav')
-        cls.calls = cls.create_calls(cls.args[1], cls.args[2])
-
-    def setUp(self):
-        super(AbsolutePathTest, self).setUp()
-        self.mock_glob.side_effect = (content for content in ([], ['']))
-        self.builder = setupam.speaker.SpeakerBuilder('test')
+        cls.builder_args = ('test',), {}
+        cls.method_args = ('home', 'test', 'wav')
+        cls.assertion_values = (
+            {'args': cls.method_args[:2], 'kwargs': {},
+             'expected_calls': cls.create_calls(cls.method_args[0], cls.method_args[2])},
+            {'args': cls.method_args[:2], 'kwargs': {'audio_format': cls.method_args[2]},
+             'expected_calls': cls.create_calls(cls.method_args[0], cls.method_args[2])},
+        )
 
     def test_fails(self):
         with self.assertRaises(TypeError):
@@ -82,10 +84,5 @@ class AbsolutePathTest(AudiosTest):
             with self.assertRaises(ValueError):
                 self.builder.set_audios('x', 'y')
 
-    def test_only_path(self):
-        self.builder.set_audios(*self.args[:2])
-        self.mock_audios.assert_has_calls(self.calls)
-
-    def test_both(self):
-        self.builder.set_audios(*self.args[:2], audio_format=self.args[2])
-        self.mock_audios.assert_has_calls(self.calls)
+    def test_it(self):
+        self.check_all_calls()
