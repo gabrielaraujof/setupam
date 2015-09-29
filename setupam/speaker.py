@@ -20,6 +20,9 @@ import collections
 import glob
 import os
 import re
+import logging
+
+import chardet.universaldetector
 
 import setupam.io
 
@@ -96,11 +99,31 @@ class SpeakerBuilder:
             raise TypeError('Missing the file path.')
 
 
-class Prompts(collections.UserDict):
+class SpeakerFileReader:
+    @staticmethod
+    def _get_encoding(filename):
+        detector = chardet.universaldetector.UniversalDetector()
+        for line in open(filename, 'rb'):
+            detector.feed(line)
+            if detector.done:
+                break
+        detector.close()
+        logging.debug('Enconding detected for {} file: {} (confidence level: {:.2f})'.format(
+            os.path.basename(filename),
+            detector.result['encoding'],
+            detector.result['confidence'])
+        )
+        if detector.result['confidence'] > .8:
+            return detector.result['encoding']
+        else:
+            return 'utf-8'
+
+
+class Prompts(SpeakerFileReader, collections.UserDict):
     PROMPT_PATTERN = r"(?P<id>^\d+).?[ ]+(?P<prompt>\S+( \S+)*)"
 
     def _populate_from_file(self, file_path):
-        with open(file_path, mode='r', encoding='utf-8') as f:
+        with open(file_path, mode='r', encoding=self._get_encoding(file_path)) as f:
             for line in f.readlines():
                 m = re.search(self.PROMPT_PATTERN, line)
                 if m:
@@ -108,7 +131,7 @@ class Prompts(collections.UserDict):
 
     def _populate_from_files(self, file_path, ext):
         for trans_file in setupam.io.track_files(file_path, ext):
-            with open(trans_file, mode='r', encoding='utf-8') as f:
+            with open(trans_file, mode='r', encoding=self._get_encoding(trans_file)) as f:
                 first_line = f.readline().strip()
                 if first_line.strip():
                     self.data[os.path.splitext(os.path.basename(trans_file))[0]] = first_line.lower()
@@ -129,7 +152,7 @@ class Audios(collections.UserList):
             self.data.append((filename, file_extension[1:], file_path))
 
 
-class Metadata(collections.UserDict):
+class Metadata(SpeakerFileReader, collections.UserDict):
     DATA_PATTERNS = [
         ('USERNAME', r'(?<=User Name:).*(?=\n)'),
         ('GENDER', r'(?<=Gender:).*(?=\n)'),
@@ -140,7 +163,7 @@ class Metadata(collections.UserDict):
     REGEX = re.compile(GLOBAL_PATTERN)
 
     def populate(self, file_path, regex=REGEX):
-        with open(file_path, mode='r', encoding='utf-8') as f:
+        with open(file_path, mode='r', encoding=self._get_encoding(file_path)) as f:
             content_file = f.read()
             for m in regex.finditer(content_file):
                 self.data[m.lastgroup] = m.group(m.lastgroup).strip()

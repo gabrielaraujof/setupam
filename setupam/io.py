@@ -40,7 +40,7 @@ class FileWriter:
         self.content.append(formatted_content)
 
     def store(self):
-        with open(self.file, mode='a', encoding='iso-8859-1') as file:
+        with open(self.file, mode='a', encoding='utf-8') as file:
             for line in self.content:
                 file.write(line + '\n')
 
