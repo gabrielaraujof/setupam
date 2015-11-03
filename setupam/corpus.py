@@ -31,7 +31,7 @@ def id_generator():
         i += 1
 
 
-class Corpus:
+class Corpus(object):
     """Handle the organization and compilation of the speech corpus."""
 
     AUDIO_DIR = 'wav'
@@ -89,7 +89,7 @@ class Corpus:
         try:
             shutil.copy2(original_path, new_path)  # Copy audio file to the new location
         except IOError as e:
-            print('I/O error(%s): %s %s' % (e.errno, e.strerror, e.filename))
+            print('I/O error({0}): {1} {2}'.format(e.errno, e.strerror, e.filename))
             sys.exit(1)
 
     def format_filename(self, suffix, ext):

@@ -27,7 +27,7 @@ import chardet.universaldetector
 import setupam.io
 
 
-class Speaker:
+class Speaker(object):
     """Handle the tasks strictly related to speakers entities.
     """
 
@@ -36,7 +36,7 @@ class Speaker:
         self.metadata = self.prompts = self.audios = None
 
 
-class SpeakerBuilder:
+class SpeakerBuilder(object):
     def __init__(self, name, source_path=None):
         self._speaker = Speaker(name)
         self.relative_path = source_path
@@ -99,7 +99,7 @@ class SpeakerBuilder:
             raise TypeError('Missing the file path.')
 
 
-class SpeakerFileReader:
+class SpeakerFileReader(object):
     @staticmethod
     def _get_encoding(filename):
         detector = chardet.universaldetector.UniversalDetector()

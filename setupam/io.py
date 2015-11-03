@@ -24,7 +24,7 @@ def track_files(file_path, file_format):
     return glob.glob('{}/*.{}'.format(file_path, file_format))
 
 
-class FileWriter:
+class FileWriter(object):
     FORMAT = '{0}'
 
     def __init__(self, file_path):
