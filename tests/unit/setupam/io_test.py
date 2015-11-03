@@ -19,23 +19,12 @@ class TrackFilesTest(unittest.TestCase):
 
 
 class FileWriterTest(unittest.TestCase):
-    def test_store(self):
-        file_path = 'testpath'
-        file_w = setupam.io.FileWriter(file_path)
-        self.assertEqual(file_w.file, file_path)
-        text = 'Texto'
-        file_w.content.append(text)
-        mock_open = mk.mock_open()
-        with mk.patch('setupam.io.open', mock_open, create=True):
-            file_w.store()
-        handle = mock_open()
-        handle.write.assert_called_with(text + '\n')
 
     def test_add_content(self):
         text = 'text1 text2'.split()
         trans = setupam.io.TranscriptionWriter('test')
         trans.add_content(*text)
-        self.assertEqual(trans.content[0], setupam.io.TranscriptionWriter.FORMAT.format(*text))
+        self.assertEqual(trans.content.getvalue(), setupam.io.transcription_formatter(*text) + '\n')
         fileid = setupam.io.FileidWriter('test')
         fileid.add_content(*text)
-        self.assertEqual(fileid.content[0], setupam.io.FileidWriter.FORMAT.format(*text))
+        self.assertEqual(fileid.content.getvalue(), '{0}/{1}'.format(*text) + '\n')

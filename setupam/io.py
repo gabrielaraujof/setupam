@@ -18,47 +18,45 @@
 
 import glob
 import re
+import io
+import shutil
 
 
 def track_files(file_path, file_format):
     return glob.glob('{}/*.{}'.format(file_path, file_format))
 
 
+def transcription_formatter(*args):
+    return '<s> {0} </s> ({1})'.format(re.sub('\S*[,.?!]+\S*', ' ', args[0]), *args[1:])
+
+
 class FileWriter(object):
-    FORMAT = '{0}'
+    def default_format_func(*args):
+        return '{0}'.format(*args)
 
-    def __init__(self, file_path):
+    def __init__(self, file_path, format_func=default_format_func):
         self.file = file_path
-        self.content = []
-
-    @classmethod
-    def format_content(cls, args):
-        return cls.FORMAT.format(*args)
+        self.format_line = format_func
+        self.content = io.StringIO()
 
     def add_content(self, *args):
-        formatted_content = self.format_content(args)
-        self.content.append(formatted_content)
+        formatted_content = self.format_line(*args)
+        self.content.write(formatted_content + '\n')
 
     def store(self):
-        with open(self.file, mode='a', encoding='utf-8') as file:
-            for line in self.content:
-                file.write(line + '\n')
+        with open(self.file, mode='w', encoding='utf-8') as file:
+            self.content.seek(0)
+            shutil.copyfileobj(self.content, file)
+        self.content.close()
 
 
 class TranscriptionWriter(FileWriter):
-    FORMAT = '<s> {0} </s> ({1})'  # Prompt / Audio representation
-    trans_regex = re.compile('\S*[,.?!]+\S*')
 
     def __init__(self, target_file):
-        super(TranscriptionWriter, self).__init__(target_file)
-
-    def add_content(self, *args):
-        filtered_trans = TranscriptionWriter.trans_regex.sub(' ', args[0])
-        super(TranscriptionWriter, self).add_content(filtered_trans, *args[1:])
+        super(TranscriptionWriter, self).__init__(target_file, transcription_formatter)
 
 
 class FileidWriter(FileWriter):
-    FORMAT = '{0}/{1}'  # Speaker representation / Audio representation
 
     def __init__(self, target_file):
-        super(FileWriter, self).__init__(target_file)
+        super(FileidWriter, self).__init__(target_file, lambda *args: '{0}/{1}'.format(*args))
