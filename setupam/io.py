@@ -50,15 +50,15 @@ class TranscriptionWriter(FileWriter):
     trans_regex = re.compile('\S*[,.?!]+\S*')
 
     def __init__(self, target_file):
-        super().__init__(target_file)
+        super(TranscriptionWriter, self).__init__(target_file)
 
     def add_content(self, *args):
         filtered_trans = TranscriptionWriter.trans_regex.sub(' ', args[0])
-        super().add_content(filtered_trans, *args[1:])
+        super(TranscriptionWriter, self).add_content(filtered_trans, *args[1:])
 
 
 class FileidWriter(FileWriter):
     FORMAT = '{0}/{1}'  # Speaker representation / Audio representation
 
     def __init__(self, target_file):
-        super().__init__(target_file)
+        super(FileWriter, self).__init__(target_file)
