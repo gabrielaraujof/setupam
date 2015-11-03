@@ -31,10 +31,7 @@ def transcription_formatter(*args):
 
 
 class FileWriter(object):
-    def default_format_func(*args):
-        return '{0}'.format(*args)
-
-    def __init__(self, file_path, format_func=default_format_func):
+    def __init__(self, file_path, format_func='{0}'.format):
         self.file = file_path
         self.format_line = format_func
         self.content = io.StringIO()
@@ -59,4 +56,4 @@ class TranscriptionWriter(FileWriter):
 class FileidWriter(FileWriter):
 
     def __init__(self, target_file):
-        super(FileidWriter, self).__init__(target_file, lambda *args: '{0}/{1}'.format(*args))
+        super(FileidWriter, self).__init__(target_file, '{0}/{1}'.format)
