@@ -140,8 +140,9 @@ class Prompts(SpeakerFileReader, collections.UserDict):
         for file_path in args:
             if os.path.exists(file_path):
                 self._populate_from_file(file_path)
+                break
         else:
-            return self._populate_from_files(kwargs['multi_path'], kwargs.get('ext', 'txt'))
+            self._populate_from_files(kwargs['multi_path'], kwargs.get('ext', 'txt'))
 
 
 class Audios(collections.UserList):

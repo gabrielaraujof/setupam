@@ -65,8 +65,6 @@ class AbsolutePathTest(MetadataTest):
             self.builder.set_metadata()
         with self.assertRaises(TypeError):
             self.builder.set_metadata(regex='')
-        with self.assertRaises(TypeError):
-            self.builder.set_metadata('something', 'another_thing')
 
     def test_it(self):
         self.check_all_calls()
