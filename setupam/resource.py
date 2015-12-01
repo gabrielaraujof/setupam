@@ -17,6 +17,12 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 import os
+import glob
+
+
+def track_files(path_, file_format):
+    return glob.glob('{}/*.{}'.format(path_, file_format))
+
 
 def load_utterance(path_):
     """ Validates and creates a single utterance object."""
@@ -25,11 +31,24 @@ def load_utterance(path_):
         """ A single speech audio file containing an utterance.
 
             Public	attributes:
-    		-	path:	The absolute path to the file.
+    		- path: The absolute path to the file.
         """
 
-        def __init__(file_path):
+        def __init__(self, file_path):
             self.path_ = file_path
+            filename = os.path.basename(self.path_)
+            self.name, self.ext = os.path.splitext(filename)
 
     if os.path.isfile(path_):
         return Utterance(path_)
+    else:
+        raise ValueError("The path {p} isn't a valid file.".format(p=path_))
+
+
+def utterances_from_dir(path_, format_):
+    """Creates a list of utterances from a single directory."""
+
+    if not os.path.isdir(path_):
+        raise ValueError("The path {p} isn't a directory.".format(p=path_))
+
+    return (load_utterance(path_) for path_ in track_files(path_, format_))
