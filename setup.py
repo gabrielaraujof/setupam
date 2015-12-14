@@ -22,6 +22,8 @@ setup(
         "Topic :: Utilities",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
+    test_requires=['nose'],
+    test_suite = 'nose.collector'
     entry_points={
         'console_scripts': ['setupam=setupam.cli:main'],
     },
