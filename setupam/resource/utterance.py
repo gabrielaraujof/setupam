@@ -18,10 +18,11 @@
 
 import os
 import glob
+import re
 
 
 def track_files(path_, file_format):
-    return glob.glob('{}/*.{}'.format(path_, file_format))
+    return glob.glob('{}/*.{}'.format(path_, re.sub(r'\.', '', file_format, count=1)))
 
 
 def load_utterance(path_):
@@ -45,7 +46,7 @@ def load_utterance(path_):
         raise ValueError("The path {p} isn't a valid file.".format(p=path_))
 
 
-def utterances_from_dir(path_, format_):
+def from_dir(path_, format_):
     """Creates a list of utterances from a single directory."""
 
     if not os.path.isdir(path_):
